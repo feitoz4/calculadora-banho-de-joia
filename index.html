@@ -47,6 +47,11 @@
 
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
+
+/* nenhum campo numérico usa as setinhas do navegador */
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+input[type=number]{-moz-appearance:textfield;appearance:textfield}
 body{
   margin:0;
   min-height:100vh;
@@ -87,22 +92,16 @@ body{
   -webkit-backdrop-filter:blur(14px) saturate(130%);
   border-bottom:1px solid rgba(213,190,121,.1);
 }
-.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.brand{display:flex;align-items:center;min-width:0}
 .brand img{
-  width:32px;height:32px;flex:none;
-  /* a coroa é Bistre; aqui ela precisa ser dourada */
-  filter:brightness(0) saturate(100%) invert(84%) sepia(23%) saturate(689%) hue-rotate(347deg) brightness(93%) contrast(88%);
+  height:32px;width:auto;display:block;
+  max-width:min(52vw,240px);object-fit:contain;object-position:left center;
 }
-.brand__name{
-  font-family:var(--display);font-size:19px;letter-spacing:.03em;
-  color:var(--cream);white-space:nowrap;
-}
-.brand__name em{font-style:italic;color:var(--ecru);font-size:15px}
 
 /* cotação do ouro — vive no topo, é o dado de mercado */
 .quote{
-  display:flex;align-items:center;gap:14px;
-  padding:8px 8px 8px 18px;
+  display:flex;align-items:center;gap:10px;
+  padding:7px 15px;
   background:var(--surface);
   border:1px solid var(--edge);
   border-radius:100px;
@@ -110,21 +109,22 @@ body{
 }
 .quote:focus-within{border-color:var(--edge-2);background:var(--surface-2)}
 .quote__lbl{font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--cream-38);white-space:nowrap}
-.quote__in{display:flex;align-items:baseline;gap:5px;color:var(--ecru)}
+.quote__in{display:flex;align-items:baseline;gap:4px;color:var(--ecru)}
 .quote__in span{font-size:13px;opacity:.7}
 .quote__in input{
-  width:86px;
+  /* a largura é medida e aplicada por JS conforme o número digitado */
+  width:38px;
   background:transparent;border:none;outline:none;padding:0;
   font-family:var(--sans);font-size:19px;font-weight:500;
   font-variant-numeric:tabular-nums;color:var(--ecru);
-  text-align:right;
+  text-align:left;
 }
 @media (max-width:620px){
   .topbar{padding:14px 18px;gap:12px}
-  .brand__name{font-size:16px}
-  .quote{padding:6px 6px 6px 12px;gap:8px}
+  .brand img{height:24px}
+  .quote{padding:6px 12px;gap:8px}
   .quote__lbl{display:none}
-  .quote__in input{width:72px;font-size:17px}
+  .quote__in input{font-size:17px}
 }
 
 /* =============================  SHELL  ================================== */
@@ -489,8 +489,7 @@ main{
 
 <header class="topbar">
   <div class="brand">
-    <img src="mark-bistre.png" alt="">
-    <span class="brand__name">WRA <em>folheados</em></span>
+    <img src="logo-wordmark.png" alt="WRA folheados">
   </div>
   <div class="quote">
     <span class="quote__lbl">Ouro hoje</span>
@@ -633,11 +632,11 @@ main{
       <h2 class="card__title">Dados do orçamento impresso</h2>
       <div class="txt">
         <label for="cliente">Cliente</label>
-        <input type="text" id="cliente" placeholder="Nome do cliente (opcional)" autocomplete="off">
+        <input type="text" id="cliente" placeholder="Opcional — nome do cliente" autocomplete="off">
       </div>
       <div class="txt">
         <label for="descricao">Descrição da peça</label>
-        <input type="text" id="descricao" placeholder="Ex: corrente veneziana 45 cm (opcional)" autocomplete="off">
+        <input type="text" id="descricao" placeholder="Opcional — ex.: corrente veneziana 45 cm" autocomplete="off">
       </div>
       <div class="line" style="margin-top:20px;border-top:1px solid rgba(213,190,121,.08);border-bottom:none;padding-top:16px">
         <span class="line__k">Cotação usada<small>salva neste navegador</small></span>
@@ -803,6 +802,28 @@ main{
     return isFinite(n) && n > 0 ? n : 0;
   }
 
+  /* ----------------------------------------------------------------------
+     Largura do campo de cotação medida no texto real, e não em `ch` — a
+     unidade `ch` diverge da largura do dígito conforme a fonte que carregar
+     (Helvetica Neue, Inter ou Arial), deixando folga ou cortando o número.
+     ---------------------------------------------------------------------- */
+  var medidor = document.createElement('span');
+  medidor.setAttribute('aria-hidden','true');
+  medidor.style.cssText = 'position:absolute;left:-9999px;top:0;white-space:pre;visibility:hidden';
+  document.body.appendChild(medidor);
+
+  function ajustarCotacao(){
+    var i  = el.ouro;
+    var cs = getComputedStyle(i);
+    medidor.style.fontFamily         = cs.fontFamily;
+    medidor.style.fontSize           = cs.fontSize;
+    medidor.style.fontWeight         = cs.fontWeight;
+    medidor.style.letterSpacing      = cs.letterSpacing;
+    medidor.style.fontVariantNumeric = cs.fontVariantNumeric;
+    medidor.textContent = i.value || '0';
+    i.style.width = Math.max(22, Math.ceil(medidor.getBoundingClientRect().width) + 2) + 'px';
+  }
+
   /* ---- chips ---- */
   var chips = $('chips');
   PRESETS.forEach(function(v){
@@ -867,6 +888,7 @@ main{
 
     var pOuro = milTotal > 0 ? (milesimos / milTotal) * 100 : 0;
 
+    ajustarCotacao();
     animarValor(valorPeca);
     $('moView').textContent     = dec.format(mo);
     $('custoGrama').textContent = brl.format(custoGrama);
