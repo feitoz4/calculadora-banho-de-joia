@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WRA folheados · Calculadora de Banhos</title>
+<link rel="icon" href="mark-bistre.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ==========================================================================
+   WRA folheados — Calculadora de Banhos
+   Ecru #D5BE79 · Champagne #EAD89B · Bistre #25130A · Cultured #F6F3F3
+   ========================================================================== */
+
+:root{
+  --ecru:#D5BE79;
+  --champagne:#EAD89B;
+  --bistre:#25130A;
+  --cultured:#F6F3F3;
+
+  /* canvas escuro derivado do Bistre */
+  --void:#120903;
+  --deep:#1A0D05;
+  --surface:rgba(255,255,255,.035);
+  --surface-2:rgba(255,255,255,.055);
+  --edge:rgba(213,190,121,.14);
+  --edge-2:rgba(213,190,121,.28);
+
+  --cream:#F2EDE4;
+  --cream-60:rgba(242,237,228,.60);
+  --cream-38:rgba(242,237,228,.38);
+
+  /* tokens claros, usados pelo orçamento impresso */
+  --ink:#25130A;
+  --ink-70:#5c4838;
+  --ink-45:#8b7a6c;
+  --hair:#E7E0D4;
+
+  --display:"Bodoni Moda",Didot,"Bodoni MT","Times New Roman",serif;
+  --sans:"Helvetica Neue",Inter,Helvetica,Arial,sans-serif;
+
+  --r:18px;
+  --ring:0 0 0 4px rgba(213,190,121,.22);
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+
+/* nenhum campo numérico usa as setinhas do navegador */
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+input[type=number]{-moz-appearance:textfield;appearance:textfield}
+body{
+  margin:0;
+  min-height:100vh;
+  background:var(--void);
+  background-image:
+    radial-gradient(120% 80% at 50% -10%, rgba(213,190,121,.20) 0%, rgba(213,190,121,0) 55%),
+    radial-gradient(90% 60% at 100% 0%, rgba(234,216,155,.07) 0%, transparent 50%),
+    linear-gradient(180deg, var(--deep) 0%, var(--void) 60%);
+  background-attachment:fixed;
+  color:var(--cream);
+  font-family:var(--sans);
+  font-size:15px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+
+/* granulado sutil sobre todo o fundo */
+.grain{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  opacity:.05;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.eyebrow{
+  font-size:10px;letter-spacing:.3em;text-transform:uppercase;
+  font-weight:500;color:var(--cream-38);
+}
+.num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+
+/* =============================  TOPO  =================================== */
+.topbar{
+  position:sticky;top:0;z-index:30;
+  display:flex;align-items:center;justify-content:space-between;gap:24px;
+  padding:18px clamp(20px,4vw,56px);
+  background:rgba(18,9,3,.72);
+  backdrop-filter:blur(14px) saturate(130%);
+  -webkit-backdrop-filter:blur(14px) saturate(130%);
+  border-bottom:1px solid rgba(213,190,121,.1);
+}
+.brand{display:flex;align-items:center;min-width:0}
+.brand img{
+  height:32px;width:auto;display:block;
+  max-width:min(52vw,240px);object-fit:contain;object-position:left center;
+}
+
+/* cotação do ouro — vive no topo, é o dado de mercado */
+.quote{
+  display:flex;align-items:center;gap:10px;
+  padding:7px 15px;
+  background:var(--surface);
+  border:1px solid var(--edge);
+  border-radius:100px;
+  transition:border-color .2s ease, background .2s ease;
+}
+.quote:focus-within{border-color:var(--edge-2);background:var(--surface-2)}
+.quote__lbl{font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--cream-38);white-space:nowrap}
+.quote__in{display:flex;align-items:baseline;gap:4px;color:var(--ecru)}
+.quote__in span{font-size:13px;opacity:.7}
+.quote__in input{
+  /* a largura é medida e aplicada por JS conforme o número digitado */
+  width:38px;
+  background:transparent;border:none;outline:none;padding:0;
+  font-family:var(--sans);font-size:19px;font-weight:500;
+  font-variant-numeric:tabular-nums;color:var(--ecru);
+  text-align:left;
+}
+@media (max-width:620px){
+  .topbar{padding:14px 18px;gap:12px}
+  .brand img{height:24px}
+  .quote{padding:6px 12px;gap:8px}
+  .quote__lbl{display:none}
+  .quote__in input{font-size:17px}
+}
+
+/* =============================  SHELL  ================================== */
+main{
+  position:relative;z-index:1;
+  max-width:1180px;margin:0 auto;
+  padding:clamp(40px,7vw,86px) clamp(20px,4vw,56px) 120px;
+}
+
+/* ==============================  HERO  ================================== */
+.hero{text-align:center;margin-bottom:clamp(40px,6vw,72px)}
+.hero__value{
+  font-family:var(--display);
+  font-weight:400;
+  font-size:clamp(3.6rem,14vw,8.5rem);
+  line-height:.94;
+  letter-spacing:-.03em;
+  margin:18px 0 0;
+  font-variant-numeric:tabular-nums;
+  background:linear-gradient(174deg,#FBF1D6 0%,var(--champagne) 32%,var(--ecru) 62%,#A98847 100%);
+  -webkit-background-clip:text;background-clip:text;
+  color:transparent;
+  -webkit-text-fill-color:transparent;
+}
+.hero__meta{
+  display:flex;align-items:center;justify-content:center;
+  flex-wrap:wrap;gap:0 20px;
+  margin-top:26px;
+  font-size:13.5px;color:var(--cream-60);
+}
+.hero__meta b{color:var(--cream);font-weight:500;font-variant-numeric:tabular-nums}
+.hero__meta i{width:3px;height:3px;border-radius:50%;background:var(--edge-2);display:block}
+@media (max-width:560px){
+  .hero__meta{gap:6px 14px;font-size:12.5px}
+  .hero__meta i{display:none}
+}
+
+/* barra de composição */
+.bar{
+  max-width:520px;margin:30px auto 0;
+}
+.bar__track{
+  display:flex;height:3px;border-radius:100px;overflow:hidden;
+  background:rgba(213,190,121,.12);
+}
+.bar__seg{height:100%;transition:width .42s cubic-bezier(.22,.61,.36,1)}
+.bar__seg--ouro{background:linear-gradient(90deg,var(--champagne),var(--ecru))}
+.bar__seg--mo{background:rgba(213,190,121,.34)}
+.bar__key{
+  display:flex;justify-content:space-between;
+  margin-top:10px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--cream-38);
+}
+.bar__key b{color:var(--cream-60);font-weight:500}
+
+/* ==============================  TILES  ================================= */
+.tiles{
+  display:grid;
+  /* minmax(0,1fr): sem isso as trilhas não encolhem e a régua de milésimos
+     estoura o tile em vez de rolar */
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:14px;
+  /* altura natural por tile: mantém os sliders na mesma linha mesmo com o
+     teclado de milésimos alongando o tile da camada */
+  align-items:start;
+}
+@media (max-width:900px){.tiles{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:480px){.tiles{grid-template-columns:1fr}}
+
+.tile{
+  display:flex;flex-direction:column;min-width:0;
+  padding:22px 22px 18px;
+  background:var(--surface);
+  border:1px solid var(--edge);
+  border-radius:var(--r);
+  transition:border-color .22s ease, background .22s ease, transform .22s ease;
+}
+.tile:hover{background:var(--surface-2);border-color:rgba(213,190,121,.22)}
+.tile:focus-within{border-color:var(--edge-2);background:var(--surface-2)}
+
+/* tile travado — parâmetro do proprietário, não da peça */
+.tile--fixed,
+.tile--fixed:hover{
+  background:rgba(0,0,0,.20);
+  border-color:rgba(213,190,121,.09);
+}
+.tile--fixed .tile__value{opacity:.9}
+.lock{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--cream-38);
+}
+.lock svg{width:10px;height:10px;fill:currentColor;flex:none}
+
+.tile__top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:2px}
+.tile__label{
+  font-size:10px;letter-spacing:.24em;text-transform:uppercase;
+  color:var(--cream-38);white-space:nowrap;
+}
+.tile__unit{font-size:11.5px;color:var(--cream-38);white-space:nowrap}
+
+.tile__value{
+  width:100%;
+  background:transparent;border:none;outline:none;padding:0;
+  font-family:var(--display);
+  font-size:clamp(2.1rem,4vw,2.75rem);
+  /* height explícita: sem ela, a div do valor fixo e os inputs divergem 2px */
+  font-weight:400;line-height:1.15;height:1.15em;
+  letter-spacing:-.02em;
+  color:var(--cream);
+  font-variant-numeric:tabular-nums;
+  transition:color .18s ease;
+}
+.tile__value::-webkit-outer-spin-button,
+.tile__value::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.tile__value{-moz-appearance:textfield;appearance:textfield}
+.tile__value:focus{color:var(--ecru)}
+
+.tile__foot{margin-top:auto;padding-top:16px;min-width:0}
+
+/* slider ----------------------------------------------------------------- */
+.rng{
+  -webkit-appearance:none;appearance:none;
+  width:100%;height:16px;background:transparent;cursor:pointer;display:block;
+  margin:0;   /* o navegador aplica 2px por padrão e desalinha os tiles */
+}
+.rng::-webkit-slider-runnable-track{height:2px;border-radius:2px;background:rgba(213,190,121,.16)}
+.rng::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  width:12px;height:12px;border-radius:50%;
+  background:var(--ecru);margin-top:-5px;
+  box-shadow:0 0 0 0 rgba(213,190,121,.22);
+  transition:box-shadow .2s ease, transform .2s ease;
+}
+.rng:hover::-webkit-slider-thumb{box-shadow:0 0 0 7px rgba(213,190,121,.13)}
+.rng:active::-webkit-slider-thumb{transform:scale(1.15)}
+.rng:focus-visible{outline:none}
+.rng:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 7px rgba(213,190,121,.3)}
+.rng::-moz-range-track{height:2px;border-radius:2px;background:rgba(213,190,121,.16)}
+.rng::-moz-range-thumb{width:12px;height:12px;border:none;border-radius:50%;background:var(--ecru)}
+/* mesma altura de .rng, para o tile sem slider alinhar com os demais */
+.rng-ghost{height:16px}
+
+/* faixa do slider -------------------------------------------------------- */
+.scale{
+  display:flex;align-items:center;justify-content:space-between;gap:6px;
+  margin-top:8px;
+}
+.scale__nav{
+  width:22px;height:22px;flex:none;
+  display:grid;place-items:center;padding:0;
+  background:transparent;
+  border:1px solid var(--edge);
+  border-radius:50%;
+  color:var(--cream-38);
+  font-family:var(--sans);font-size:13px;line-height:1;
+  cursor:pointer;
+  transition:border-color .16s ease, color .16s ease, background .16s ease;
+}
+.scale__nav:hover:not(:disabled){border-color:var(--edge-2);color:var(--cream);background:rgba(213,190,121,.07)}
+.scale__nav:focus-visible{outline:none;box-shadow:var(--ring)}
+.scale__nav:disabled{opacity:.25;cursor:default}
+.scale__label{
+  font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--cream-38);font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+/* faixa fechada: sem setas, o rótulo só informa os limites */
+.scale--static{justify-content:center;height:22px}
+
+/* chips de milésimos ----------------------------------------------------- */
+/* régua de milésimos: setas ‹ › ladeando a faixa rolável.
+   Ocupa a mesma linha de 22px dos rótulos de faixa dos outros tiles. */
+.regua{
+  display:flex;align-items:center;gap:6px;
+  margin-top:8px;min-width:0;height:22px;
+}
+.chips{
+  display:flex;
+  flex-wrap:nowrap;
+  align-items:center;
+  gap:4px;
+  flex:1;
+  height:22px;
+  min-width:0;
+  /* offsetLeft dos chips precisa ser relativo a este contêiner,
+     senão a conta que centraliza o chip ativo mede contra <main> */
+  position:relative;
+  overflow-x:auto;
+  overscroll-behavior-x:contain;
+  scroll-snap-type:x proximity;
+  scrollbar-width:none;
+  -ms-overflow-style:none;
+  /* esmaece as pontas, sinalizando que há mais números fora da vista */
+  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 12px,#000 calc(100% - 12px),transparent 100%);
+  mask-image:linear-gradient(90deg,transparent 0,#000 12px,#000 calc(100% - 12px),transparent 100%);
+}
+.chips::-webkit-scrollbar{display:none}
+.chip{
+  flex:0 0 auto;
+  scroll-snap-align:center;
+  height:22px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--sans);font-size:11px;font-weight:500;
+  font-variant-numeric:tabular-nums;
+  padding:0 9px;
+  background:transparent;
+  border:1px solid var(--edge);
+  border-radius:7px;
+  color:var(--cream-60);
+  cursor:pointer;
+  transition:all .16s ease;
+}
+.chip:hover{border-color:var(--edge-2);color:var(--cream)}
+.chip:focus-visible{outline:none;box-shadow:var(--ring)}
+.chip[aria-pressed="true"]{background:var(--ecru);border-color:var(--ecru);color:var(--bistre)}
+
+/* =============================  LEDGER  ================================= */
+.ledger{
+  display:grid;grid-template-columns:1fr 1fr;gap:14px;
+  margin-top:14px;
+}
+@media (max-width:900px){.ledger{grid-template-columns:1fr}}
+
+.card{
+  padding:26px;
+  background:var(--surface);
+  border:1px solid var(--edge);
+  border-radius:var(--r);
+}
+.card__title{
+  font-size:10px;letter-spacing:.28em;text-transform:uppercase;
+  color:var(--cream-38);margin:0 0 18px;font-weight:500;
+}
+
+.line{
+  display:flex;align-items:baseline;justify-content:space-between;gap:16px;
+  padding:11px 0;
+  border-bottom:1px solid rgba(213,190,121,.08);
+}
+.line:last-of-type{border-bottom:none}
+.line__k{font-size:13.5px;color:var(--cream-60)}
+.line__k small{display:block;font-size:11px;color:var(--cream-38);margin-top:2px}
+.line__v{font-size:14.5px;font-weight:500;color:var(--cream);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* bloco do total */
+.grand{
+  display:flex;align-items:flex-end;justify-content:space-between;gap:16px;
+  margin-top:20px;padding-top:20px;
+  border-top:1px solid var(--edge-2);
+}
+.grand__k{font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--champagne)}
+.grand__k small{
+  display:block;margin-top:5px;font-size:12px;letter-spacing:.02em;
+  text-transform:none;color:var(--cream-38);
+}
+.grand__v{
+  font-family:var(--display);font-size:2.4rem;line-height:1;
+  color:var(--ecru);font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+
+/* campos de texto do orçamento */
+.txt{margin-bottom:14px}
+.txt:last-of-type{margin-bottom:0}
+.txt label{display:block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--cream-38);margin-bottom:7px}
+.txt input{
+  width:100%;height:44px;padding:0 14px;
+  background:rgba(0,0,0,.22);
+  border:1px solid var(--edge);
+  border-radius:10px;
+  font-family:var(--sans);font-size:14.5px;color:var(--cream);
+  outline:none;transition:border-color .18s ease, background .18s ease;
+}
+.txt input::placeholder{color:rgba(242,237,228,.25)}
+.txt input:focus{border-color:var(--edge-2);background:rgba(0,0,0,.3)}
+
+/* ações ------------------------------------------------------------------ */
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+.btn{
+  flex:1 1 150px;height:46px;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-family:var(--sans);font-size:11.5px;font-weight:600;
+  letter-spacing:.14em;text-transform:uppercase;
+  border-radius:100px;cursor:pointer;white-space:nowrap;
+  transition:all .18s ease;
+}
+.btn--gold{
+  background:linear-gradient(180deg,var(--champagne),var(--ecru));
+  border:1px solid var(--ecru);color:var(--bistre);
+}
+.btn--gold:hover{filter:brightness(1.08);transform:translateY(-1px)}
+.btn--line{background:transparent;border:1px solid var(--edge-2);color:var(--champagne)}
+.btn--line:hover{background:rgba(213,190,121,.09);border-color:var(--ecru)}
+.btn:focus-visible{outline:none;box-shadow:var(--ring)}
+
+/* ===========================  RODAPÉ  =================================== */
+.formula{
+  margin-top:34px;padding-top:26px;
+  border-top:1px solid rgba(213,190,121,.1);
+  display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 18px;
+  font-size:12.5px;color:var(--cream-38);
+}
+.formula code{
+  font-family:ui-monospace,Consolas,"SF Mono",Menlo,monospace;
+  font-size:12.5px;color:var(--champagne);
+}
+
+/* =====================  BARRA FIXA (mobile)  ============================ */
+.mobilebar{
+  position:fixed;left:0;right:0;bottom:0;z-index:40;
+  display:none;align-items:center;justify-content:space-between;gap:16px;
+  padding:12px 18px;
+  padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));
+  background:rgba(18,9,3,.9);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border-top:1px solid var(--edge-2);
+}
+.mobilebar .k{font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:var(--cream-38)}
+.mobilebar .v{font-family:var(--display);font-size:1.4rem;color:var(--ecru);line-height:1.15;font-variant-numeric:tabular-nums}
+.mobilebar .v small{font-family:var(--sans);font-size:11px;color:var(--cream-38)}
+@media (max-width:900px){.mobilebar{display:flex}}
+
+@media (prefers-reduced-motion:reduce){
+  *{transition-duration:.01ms !important;animation-duration:.01ms !important}
+}
+
+/* =====================  DOCUMENTO DE ORÇAMENTO  =========================
+   Só existe no papel / PDF. */
+.doc{display:none}
+
+@media print{
+  @page{size:A4;margin:14mm 15mm}
+
+  html,body{background:#fff !important;background-image:none !important;color:var(--ink)}
+  .topbar,main,.mobilebar,.grain{display:none !important}
+
+  .doc{
+    display:block;color:var(--ink);font-family:var(--sans);
+    font-size:10.5pt;line-height:1.45;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact;
+  }
+
+  .doc__head{
+    display:flex;align-items:flex-end;gap:14px;
+    padding-bottom:10px;border-bottom:2px solid var(--ecru);
+  }
+  .doc__head img{width:44px;height:auto;flex:none}
+  .doc__brand{flex:1;line-height:1.1}
+  .doc__name{font-family:var(--display);font-size:21pt;letter-spacing:.02em}
+  .doc__tag{font-size:7pt;letter-spacing:.34em;text-transform:uppercase;color:var(--ink-70);margin-top:3px}
+  .doc__meta{text-align:right;font-size:8.5pt;line-height:1.5}
+  .doc__meta div{display:flex;gap:10px;justify-content:flex-end}
+  .doc__meta span{color:var(--ink-45);text-transform:uppercase;letter-spacing:.14em;font-size:7pt}
+  .doc__meta b{font-weight:500;font-variant-numeric:tabular-nums;min-width:76px;text-align:right}
+
+  .doc__title{font-family:var(--display);font-weight:400;font-size:19pt;margin:20px 0 0;letter-spacing:-.005em}
+  .doc__client{display:flex;gap:10px;align-items:baseline;margin-top:6px;font-size:10pt}
+  .doc__client span{font-size:7pt;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-45)}
+  .doc__client b{font-weight:500}
+
+  .doc__grid{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:20px}
+  .doc__block h2{
+    font-size:7pt;letter-spacing:.24em;text-transform:uppercase;
+    color:var(--ink-45);font-weight:500;margin:0 0 8px;padding-bottom:6px;
+    border-bottom:1px solid var(--hair);
+  }
+  .doc__block table{width:100%;border-collapse:collapse}
+  .doc__block td{padding:5.5px 0;font-size:9.5pt;border-bottom:1px solid #F1ECE3;vertical-align:baseline}
+  .doc__block tr:last-child td{border-bottom:none}
+  .doc__block td:first-child{color:var(--ink-70)}
+  .doc__block td:last-child{text-align:right;font-weight:500;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .doc__block tr.em td{font-weight:600}
+
+  .doc__total{display:flex;align-items:stretch;margin-top:22px;border:1px solid var(--ecru)}
+  .doc__cell{padding:12px 16px;display:flex;flex-direction:column;justify-content:center}
+  .doc__cell span{font-size:7pt;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-45);margin-bottom:4px}
+  .doc__cell b{font-weight:500;font-variant-numeric:tabular-nums;font-size:11pt}
+  .doc__cell--unit{flex:1;border-right:1px solid #EFE6D2}
+  .doc__cell--qty{width:88px;border-right:1px solid #EFE6D2;text-align:center;align-items:center}
+  .doc__cell--grand{width:44%;background:#FBF5E7;text-align:right;align-items:flex-end}
+  .doc__cell--grand span{color:var(--ink-70)}
+  .doc__cell--grand b{font-family:var(--display);font-size:21pt;line-height:1.05}
+
+  .doc__note{margin-top:18px;font-size:8.5pt;color:var(--ink-70);line-height:1.5}
+  .doc__note p{margin:0 0 5px;padding-left:12px;border-left:1px solid var(--hair)}
+  .doc__note b{color:var(--ink);font-weight:600}
+  .doc__note code{font-family:Consolas,"SF Mono",Menlo,monospace;font-size:8.5pt}
+
+  .doc__foot{display:flex;gap:40px;margin-top:34px}
+  .doc__sign{
+    flex:1;padding-top:6px;border-top:1px solid var(--ink-45);
+    font-size:7.5pt;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-45);text-align:center;
+  }
+  .doc__legal{
+    margin-top:16px;padding-top:8px;border-top:1px solid var(--hair);
+    font-size:7pt;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-45);text-align:center;
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="grain" aria-hidden="true"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <img src="logo-wordmark.png" alt="WRA folheados">
+  </div>
+  <div class="quote">
+    <span class="quote__lbl">Ouro hoje</span>
+    <label class="quote__in">
+      <span>R$</span>
+      <input type="number" id="ouro" value="650" step="10" min="0" inputmode="decimal" aria-label="Preço do grama de ouro">
+      <span>/g</span>
+    </label>
+  </div>
+</header>
+
+<main>
+
+  <!-- ============================ HERO ============================ -->
+  <section class="hero">
+    <span class="eyebrow">Valor do banho · por peça</span>
+    <div class="hero__value num" id="valorPeca" aria-live="polite">R$ 10,46</div>
+
+    <div class="hero__meta">
+      <span><b id="custoGrama">R$ 2,99</b> por grama</span>
+      <i></i>
+      <span><b id="milTotal">4,6</b> milésimos totais</span>
+      <i></i>
+      <span><b id="parcOuro">R$ 6,83</b> em ouro</span>
+      <i></i>
+      <span><b id="parcMO">R$ 3,64</b> em mão de obra</span>
+    </div>
+
+    <div class="bar">
+      <div class="bar__track" role="img" aria-label="Composição entre ouro e mão de obra">
+        <div class="bar__seg bar__seg--ouro" id="segOuro" style="width:65%"></div>
+        <div class="bar__seg bar__seg--mo"   id="segMO"   style="width:35%"></div>
+      </div>
+      <div class="bar__key">
+        <span>Ouro <b id="pctOuro">65%</b></span>
+        <span>Mão de obra <b id="pctMO">35%</b></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ TILES =========================== -->
+  <section class="tiles">
+
+    <div class="tile">
+      <div class="tile__top">
+        <span class="tile__label">Peso</span>
+        <span class="tile__unit">gramas</span>
+      </div>
+      <input type="number" class="tile__value num" id="peso" value="3.5" step="0.1" min="0" inputmode="decimal" aria-label="Peso da peça em gramas">
+      <div class="tile__foot">
+        <input type="range" class="rng" id="pesoR" min="0" max="100" step="0.1" value="3.5" aria-label="Ajustar peso">
+        <div class="scale">
+          <button type="button" class="scale__nav" data-scale="peso" data-dir="-1" aria-label="Faixa anterior de peso">&lsaquo;</button>
+          <span class="scale__label" id="pesoEscala">0 – 100 g</span>
+          <button type="button" class="scale__nav" data-scale="peso" data-dir="1" aria-label="Próxima faixa de peso">&rsaquo;</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="tile">
+      <div class="tile__top">
+        <span class="tile__label">Camada</span>
+        <span class="tile__unit">milésimos</span>
+      </div>
+      <input type="number" class="tile__value num" id="milesimos" value="3" step="1" min="2" max="20" inputmode="numeric" aria-label="Milésimos de ouro, de 2 a 20">
+      <div class="tile__foot">
+        <input type="range" class="rng" id="milesimosR" min="2" max="20" step="1" value="3" aria-label="Ajustar milésimos">
+        <div class="regua">
+          <button type="button" class="scale__nav" id="milMenos" aria-label="Ver milésimos anteriores">&lsaquo;</button>
+          <div class="chips" id="chips" role="group" aria-label="Milésimos de 2 a 20"></div>
+          <button type="button" class="scale__nav" id="milMais" aria-label="Ver próximos milésimos">&rsaquo;</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="tile tile--fixed">
+      <div class="tile__top">
+        <span class="tile__label">Mão de obra</span>
+        <span class="tile__unit">milésimos</span>
+      </div>
+      <div class="tile__value num" id="moView">1,6</div>
+      <div class="tile__foot">
+        <!-- ocupa o lugar do slider ausente, para este tile ter a mesma
+             altura dos vizinhos -->
+        <div class="rng-ghost" aria-hidden="true"></div>
+        <div class="scale scale--static">
+          <span class="lock">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V11a2 2 0 0 0-2-2h-1V6a5 5 0 0 0-5-5zm0 2a3 3 0 0 1 3 3v3H9V6a3 3 0 0 1 3-3z"/></svg>
+            Valor fixo
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tile">
+      <div class="tile__top">
+        <span class="tile__label">Quantidade</span>
+        <span class="tile__unit">peças</span>
+      </div>
+      <input type="number" class="tile__value num" id="qtd" value="1" step="1" min="1" inputmode="numeric" aria-label="Quantidade de peças">
+      <div class="tile__foot">
+        <input type="range" class="rng" id="qtdR" min="1" max="100" step="1" value="1" aria-label="Ajustar quantidade">
+        <div class="scale">
+          <button type="button" class="scale__nav" data-scale="qtd" data-dir="-1" aria-label="Faixa anterior de quantidade">&lsaquo;</button>
+          <span class="scale__label" id="qtdEscala">1 – 100 pç</span>
+          <button type="button" class="scale__nav" data-scale="qtd" data-dir="1" aria-label="Próxima faixa de quantidade">&rsaquo;</button>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- =========================== LEDGER =========================== -->
+  <section class="ledger">
+
+    <div class="card">
+      <h2 class="card__title">Fechamento</h2>
+
+      <div class="line">
+        <span class="line__k">Valor unitário<small>por peça banhada</small></span>
+        <span class="line__v num" id="unit">R$ 10,46</span>
+      </div>
+      <div class="line">
+        <span class="line__k">Parcela de ouro<small>por peça</small></span>
+        <span class="line__v num" id="lOuro">R$ 6,83</span>
+      </div>
+      <div class="line">
+        <span class="line__k">Parcela de mão de obra<small>por peça</small></span>
+        <span class="line__v num" id="lMO">R$ 3,64</span>
+      </div>
+
+      <div class="grand">
+        <span class="grand__k">Total<small id="qtdLabel">1 peça</small></span>
+        <span class="grand__v num" id="total">R$ 10,46</span>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="btn btn--gold" id="btnCopiar">Copiar orçamento</button>
+        <button type="button" class="btn btn--line" id="btnImprimir">Imprimir orçamento</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="card__title">Dados do orçamento impresso</h2>
+      <div class="txt">
+        <label for="cliente">Cliente</label>
+        <input type="text" id="cliente" placeholder="Opcional — nome do cliente" autocomplete="off">
+      </div>
+      <div class="txt">
+        <label for="descricao">Descrição da peça</label>
+        <input type="text" id="descricao" placeholder="Opcional — ex.: corrente veneziana 45 cm" autocomplete="off">
+      </div>
+      <div class="line" style="margin-top:20px;border-top:1px solid rgba(213,190,121,.08);border-bottom:none;padding-top:16px">
+        <span class="line__k">Cotação usada<small>salva neste navegador</small></span>
+        <span class="line__v num" id="cotEcho">R$ 650,00 /g</span>
+      </div>
+    </div>
+
+  </section>
+
+  <p class="formula">
+    <span>Base de cálculo</span>
+    <code>Peso × (milésimos + M.O.) × cotação ÷ 1000</code>
+    <span>A mão de obra é cobrada em milésimos, como camada adicional de ouro.</span>
+  </p>
+
+</main>
+
+<!-- ============ ORÇAMENTO — só aparece na impressão / PDF ============ -->
+<div class="doc" id="doc">
+
+  <header class="doc__head">
+    <img src="mark-bistre.png" alt="">
+    <div class="doc__brand">
+      <div class="doc__name">WRA folheados</div>
+      <div class="doc__tag">Gold &amp; Silver</div>
+    </div>
+    <div class="doc__meta">
+      <div><span>Orçamento</span><b id="docNum">—</b></div>
+      <div><span>Data</span><b id="docData">—</b></div>
+    </div>
+  </header>
+
+  <h1 class="doc__title">Orçamento de banho</h1>
+  <div class="doc__client" id="docClienteLinha">
+    <span>Cliente</span><b id="docCliente"></b>
+  </div>
+
+  <section class="doc__grid">
+    <div class="doc__block">
+      <h2>Especificação da peça</h2>
+      <table>
+        <tbody>
+          <tr><td>Descrição</td><td id="docDesc">—</td></tr>
+          <tr><td>Peso unitário</td><td id="docPeso">—</td></tr>
+          <tr><td>Camada de ouro</td><td id="docMil">—</td></tr>
+          <tr><td>Mão de obra</td><td id="docMO">—</td></tr>
+          <tr class="em"><td>Milésimos totais</td><td id="docMilTotal">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="doc__block">
+      <h2>Composição do custo</h2>
+      <table>
+        <tbody>
+          <tr><td>Cotação do ouro</td><td id="docOuro">—</td></tr>
+          <tr><td>Custo por grama</td><td id="docGrama">—</td></tr>
+          <tr><td>Parcela de ouro</td><td id="docParcOuro">—</td></tr>
+          <tr><td>Parcela de mão de obra</td><td id="docParcMO">—</td></tr>
+          <tr class="em"><td>Valor por peça</td><td id="docValorPeca">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="doc__total">
+    <div class="doc__cell doc__cell--unit"><span>Valor unitário</span><b id="docUnit">—</b></div>
+    <div class="doc__cell doc__cell--qty"><span>Peças</span><b id="docQtd">—</b></div>
+    <div class="doc__cell doc__cell--grand"><span>Total do orçamento</span><b id="docTotal">—</b></div>
+  </section>
+
+  <section class="doc__note">
+    <p><b>Base de cálculo.</b>
+       <code>Peso × (milésimos + mão de obra) × cotação do ouro ÷ 1000</code>.
+       A mão de obra é cobrada em milésimos, como camada adicional de ouro.</p>
+    <p><b>Validade.</b> Os valores acima consideram a cotação de
+       <b id="docValidade">—</b> por grama de ouro. Qualquer variação na cotação
+       altera proporcionalmente o valor deste orçamento.</p>
+  </section>
+
+  <footer class="doc__foot">
+    <div class="doc__sign">WRA folheados</div>
+    <div class="doc__sign">Cliente</div>
+  </footer>
+
+  <div class="doc__legal">WRA folheados · Gold &amp; Silver</div>
+
+</div>
+
+<div class="mobilebar" aria-hidden="true">
+  <div>
+    <div class="k">Por peça</div>
+    <div class="v num" id="mbPeca">R$ 10,46</div>
+  </div>
+  <div style="text-align:right">
+    <div class="k">Total</div>
+    <div class="v num" id="mbTotal">R$ 10,46</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ======================================================================
+     MÃO DE OBRA — parâmetro do proprietário, em milésimos.
+     Não é editável pela interface. Para alterar, troque o número abaixo.
+     ====================================================================== */
+  var MAO_DE_OBRA = 1.6;
+
+  var $ = function(id){ return document.getElementById(id); };
+  var campos = ['peso','milesimos','ouro','qtd'];
+  var el = {};
+  campos.forEach(function(id){ el[id] = $(id); });
+
+  /* sliders espelhados nos campos numéricos */
+  var pares = {peso:'pesoR', milesimos:'milesimosR', qtd:'qtdR'};
+
+  /* ----------------------------------------------------------------------
+     FAIXAS DO SLIDER
+     O campo numérico aceita qualquer valor, sem teto. O slider percorre uma
+     faixa por vez (0–100, 100–200, ...), navegável pelas setas ‹ ›. Digitar
+     um valor fora da faixa atual salta automaticamente para a faixa certa.
+     `banda` é o tamanho de cada faixa — altere aqui se quiser outro passo.
+     ---------------------------------------------------------------------- */
+  var ESCALAS = {
+    peso: {banda:100, sufixo:' g',  piso:0},
+    qtd:  {banda:100, sufixo:' pç', piso:1}
+  };
+  var bandaAtual = {peso:0, qtd:0};
+
+  /* A camada tem faixa fechada: de 2 a 20, só inteiros. */
+  var MIL_MIN = 2, MIL_MAX = 20;
+
+  function milesimosValidos(){
+    var n = Math.round(val(el.milesimos));
+    if (!isFinite(n)) n = MIL_MIN;
+    return Math.min(MIL_MAX, Math.max(MIL_MIN, n));
+  }
+
+  function aplicarFaixa(campo, valor){
+    var cfg = ESCALAS[campo];
+    var idx = Math.floor(valor / cfg.banda);
+    if (!isFinite(idx) || idx < 0) idx = 0;
+    bandaAtual[campo] = idx;
+
+    var lo = Math.max(cfg.piso, idx * cfg.banda);
+    var hi = (idx + 1) * cfg.banda;
+
+    var r = $(pares[campo]);
+    r.min   = lo;
+    r.max   = hi;
+    r.value = Math.min(hi, Math.max(lo, valor));
+
+    $(campo + 'Escala').textContent = dec.format(lo) + ' – ' + dec.format(hi) + cfg.sufixo;
+
+    var voltar = document.querySelector('.scale__nav[data-scale="' + campo + '"][data-dir="-1"]');
+    if (voltar) voltar.disabled = (idx === 0);
+  }
+
+  var brl = new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:2});
+  var dec = new Intl.NumberFormat('pt-BR',{maximumFractionDigits:3});
+  var pct = new Intl.NumberFormat('pt-BR',{maximumFractionDigits:0});
+
+  var STORE   = 'wra.precoOuro';
+  var SEQ     = 'wra.orcamento.seq';
+  /* todos os inteiros da faixa: 2, 3, 4, ... 20 */
+  var PRESETS = [];
+  for (var p = MIL_MIN; p <= MIL_MAX; p++) PRESETS.push(p);
+  var reduce  = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function val(input){
+    var n = parseFloat(String(input.value).replace(',','.'));
+    return isFinite(n) && n > 0 ? n : 0;
+  }
+
+  /* ----------------------------------------------------------------------
+     Largura do campo de cotação medida no texto real, e não em `ch` — a
+     unidade `ch` diverge da largura do dígito conforme a fonte que carregar
+     (Helvetica Neue, Inter ou Arial), deixando folga ou cortando o número.
+     ---------------------------------------------------------------------- */
+  var medidor = document.createElement('span');
+  medidor.setAttribute('aria-hidden','true');
+  medidor.style.cssText = 'position:absolute;left:-9999px;top:0;white-space:pre;visibility:hidden';
+  document.body.appendChild(medidor);
+
+  function ajustarCotacao(){
+    var i  = el.ouro;
+    var cs = getComputedStyle(i);
+    medidor.style.fontFamily         = cs.fontFamily;
+    medidor.style.fontSize           = cs.fontSize;
+    medidor.style.fontWeight         = cs.fontWeight;
+    medidor.style.letterSpacing      = cs.letterSpacing;
+    medidor.style.fontVariantNumeric = cs.fontVariantNumeric;
+    medidor.textContent = i.value || '0';
+    i.style.width = Math.max(22, Math.ceil(medidor.getBoundingClientRect().width) + 2) + 'px';
+  }
+
+  /* ---- chips ---- */
+  var chips = $('chips');
+  PRESETS.forEach(function(v){
+    var b = document.createElement('button');
+    b.type='button'; b.className='chip'; b.textContent=v;
+    b.setAttribute('aria-pressed','false');
+    b.addEventListener('click', function(){ el.milesimos.value = v; calcular(); });
+    chips.appendChild(b);
+  });
+  function syncChips(mil){
+    var ativo = null;
+    Array.prototype.forEach.call(chips.children, function(b){
+      var marcado = parseFloat(b.textContent) === mil;
+      b.setAttribute('aria-pressed', marcado ? 'true' : 'false');
+      if (marcado) ativo = b;
+    });
+
+    /* traz o chip ativo para a vista sem mexer na rolagem da página —
+       scrollIntoView poderia arrastar o documento inteiro */
+    if (ativo){
+      var ini = ativo.offsetLeft;
+      var fim = ini + ativo.offsetWidth;
+      if (ini < chips.scrollLeft + 12 || fim > chips.scrollLeft + chips.clientWidth - 12){
+        chips.scrollLeft = ini - (chips.clientWidth - ativo.offsetWidth) / 2;
+      }
+    }
+    atualizarSetasRegua();
+  }
+
+  /* as setas refletem a posição da rolagem, não o valor selecionado */
+  function atualizarSetasRegua(){
+    var fim = chips.scrollWidth - chips.clientWidth;
+    $('milMenos').disabled = chips.scrollLeft <= 1;
+    $('milMais').disabled  = chips.scrollLeft >= fim - 1;
+  }
+
+  /* ---- animação do número principal ----
+     Enfeite apenas: um timer de segurança garante o valor final, porque o
+     navegador suspende requestAnimationFrame em abas ocultas. */
+  var animFrom = 0, animRaf = null, animGuard = null, animGen = 0, DUR = 300;
+
+  function animarValor(target){
+    var node = $('valorPeca');
+    var gen  = ++animGen;
+    cancelAnimationFrame(animRaf);
+    clearTimeout(animGuard);
+
+    function concluir(){
+      if (gen !== animGen) return;
+      node.textContent = brl.format(target);
+      animFrom = target;
+    }
+    if (reduce || document.hidden || Math.abs(target - animFrom) < 0.005){ concluir(); return; }
+
+    var start = animFrom, delta = target - start, t0 = performance.now();
+    animGuard = setTimeout(concluir, DUR + 140);
+    animRaf = requestAnimationFrame(function tick(now){
+      if (gen !== animGen) return;
+      var p = Math.min(1, (now - t0) / DUR);
+      node.textContent = brl.format(start + delta * (1 - Math.pow(1 - p, 3)));
+      if (p < 1) animRaf = requestAnimationFrame(tick);
+      else concluir();
+    });
+  }
+
+  /* ---- cálculo (idêntico à planilha) ---- */
+  var estado = {};
+
+  function calcular(){
+    var peso      = val(el.peso);
+    var milesimos = milesimosValidos();
+    var mo        = MAO_DE_OBRA;
+    var ouro      = val(el.ouro);
+    var qtd       = Math.max(1, Math.floor(val(el.qtd)) || 1);
+
+    var milTotal   = milesimos + mo;           // G3 = B4 + C4
+    var custoGrama = milTotal * ouro / 1000;   // I3 = G3 * D4 / 1000
+    var valorPeca  = peso * custoGrama;        // E4 = A4 * I3
+
+    var parcOuro = peso * milesimos * ouro / 1000;
+    var parcMO   = peso * mo * ouro / 1000;
+    var totalPed = valorPeca * qtd;
+
+    var pOuro = milTotal > 0 ? (milesimos / milTotal) * 100 : 0;
+
+    ajustarCotacao();
+    animarValor(valorPeca);
+    $('moView').textContent     = dec.format(mo);
+    $('custoGrama').textContent = brl.format(custoGrama);
+    $('milTotal').textContent   = dec.format(milTotal);
+    $('parcOuro').textContent   = brl.format(parcOuro);
+    $('parcMO').textContent     = brl.format(parcMO);
+
+    $('segOuro').style.width = pOuro + '%';
+    $('segMO').style.width   = (100 - pOuro) + '%';
+    $('pctOuro').textContent = pct.format(pOuro) + '%';
+    $('pctMO').textContent   = pct.format(100 - pOuro) + '%';
+
+    $('unit').textContent     = brl.format(valorPeca);
+    $('lOuro').textContent    = brl.format(parcOuro);
+    $('lMO').textContent      = brl.format(parcMO);
+    $('total').textContent    = brl.format(totalPed);
+    $('qtdLabel').textContent = qtd + (qtd === 1 ? ' peça' : ' peças');
+    $('cotEcho').textContent  = brl.format(ouro) + ' /g';
+
+    $('mbPeca').textContent  = brl.format(valorPeca);
+    $('mbTotal').textContent = brl.format(totalPed);
+
+    /* posiciona cada slider na faixa que contém o valor atual */
+    Object.keys(ESCALAS).forEach(function(k){ aplicarFaixa(k, val(el[k])); });
+    $('milesimosR').value = milesimos;
+
+    syncChips(milesimos);
+    try { localStorage.setItem(STORE, String(ouro)); } catch(e){}
+
+    estado = {peso:peso, milesimos:milesimos, mo:mo, ouro:ouro, qtd:qtd,
+              custoGrama:custoGrama, parcOuro:parcOuro, parcMO:parcMO,
+              valorPeca:valorPeca, total:totalPed};
+  }
+
+  /* ---- copiar ---- */
+  $('btnCopiar').addEventListener('click', function(){
+    var btn = this, e = estado;
+    var txt = [
+      'WRA folheados — Orçamento de banho','',
+      'Peça .............. ' + dec.format(e.peso) + ' g',
+      'Camada ............ ' + dec.format(e.milesimos) + ' milésimos + ' + dec.format(e.mo) + ' M.O.',
+      'Ouro .............. ' + brl.format(e.ouro) + ' /g','',
+      'Valor por peça .... ' + brl.format(e.valorPeca),
+      'Quantidade ........ ' + e.qtd,
+      'TOTAL ............. ' + brl.format(e.total)
+    ].join('\n');
+
+    function ok(){
+      var antes = btn.textContent;
+      btn.textContent = 'Copiado ✓';
+      setTimeout(function(){ btn.textContent = antes; }, 1600);
+    }
+    function fallback(){
+      var ta = document.createElement('textarea');
+      ta.value = txt; ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); ok(); } catch(err){}
+      document.body.removeChild(ta);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(ok, fallback);
+    } else fallback();
+  });
+
+  /* ---- orçamento impresso ---- */
+  function proximoNumero(){
+    var h = new Date();
+    var ymd = h.getFullYear().toString() +
+              String(h.getMonth()+1).padStart(2,'0') +
+              String(h.getDate()).padStart(2,'0');
+    var seq = 1;
+    try {
+      var g = JSON.parse(localStorage.getItem(SEQ) || '{}');
+      seq = (g.dia === ymd ? g.n + 1 : 1);
+      localStorage.setItem(SEQ, JSON.stringify({dia:ymd, n:seq}));
+    } catch(e){}
+    return ymd + '-' + String(seq).padStart(3,'0');
+  }
+
+  var numeroAtual = null;
+
+  function montarDocumento(){
+    var e = estado;
+    if (!numeroAtual) numeroAtual = proximoNumero();
+    $('docNum').textContent  = numeroAtual;
+    $('docData').textContent = new Date().toLocaleDateString('pt-BR');
+
+    var cliente = $('cliente').value.trim();
+    $('docCliente').textContent = cliente;
+    $('docClienteLinha').style.display = cliente ? 'flex' : 'none';
+
+    /* a linha fica sempre visível para as duas colunas alinharem */
+    $('docDesc').textContent = $('descricao').value.trim() || '—';
+
+    $('docPeso').textContent     = dec.format(e.peso) + ' g';
+    $('docMil').textContent      = dec.format(e.milesimos) + ' milésimos';
+    $('docMO').textContent       = dec.format(e.mo) + ' milésimos';
+    $('docMilTotal').textContent = dec.format(e.milesimos + e.mo) + ' milésimos';
+
+    $('docOuro').textContent      = brl.format(e.ouro) + ' /g';
+    $('docGrama').textContent     = brl.format(e.custoGrama);
+    $('docParcOuro').textContent  = brl.format(e.parcOuro);
+    $('docParcMO').textContent    = brl.format(e.parcMO);
+    $('docValorPeca').textContent = brl.format(e.valorPeca);
+
+    $('docUnit').textContent  = brl.format(e.valorPeca);
+    $('docQtd').textContent   = e.qtd;
+    $('docTotal').textContent = brl.format(e.total);
+    $('docValidade').textContent = brl.format(e.ouro);
+  }
+
+  $('btnImprimir').addEventListener('click', function(){
+    numeroAtual = proximoNumero();
+    montarDocumento();
+    window.print();
+  });
+  window.addEventListener('beforeprint', montarDocumento);
+
+  /* ---- init ---- */
+  try {
+    var saved = localStorage.getItem(STORE);
+    if (saved && parseFloat(saved) > 0) el.ouro.value = parseFloat(saved);
+  } catch(e){}
+
+  campos.forEach(function(id){ el[id].addEventListener('input', calcular); });
+
+  /* As setas apenas correm a régua — quem seleciona é o clique no número.
+     Por isso ficam desativadas nas pontas da rolagem, não nas do valor.
+
+     A animação é feita à mão: `scrollBy({behavior:'smooth'})` é ignorado em
+     alguns contextos de renderização, e ali a seta simplesmente não faria
+     nada. O timer de segurança garante a chegada mesmo se o rAF for suspenso. */
+  var reguaRaf = null, reguaGuard = null, reguaGen = 0;
+
+  function rolarRegua(dir){
+    var passo = Math.max(60, Math.round(chips.clientWidth * 0.8));
+    var limite = chips.scrollWidth - chips.clientWidth;
+    var alvo = Math.max(0, Math.min(limite, chips.scrollLeft + dir * passo));
+    var gen = ++reguaGen;
+
+    cancelAnimationFrame(reguaRaf);
+    clearTimeout(reguaGuard);
+
+    function concluir(){
+      if (gen !== reguaGen) return;
+      chips.scrollLeft = alvo;
+      atualizarSetasRegua();
+    }
+    if (reduce || document.hidden){ concluir(); return; }
+
+    var ini = chips.scrollLeft, delta = alvo - ini, t0 = performance.now(), dur = 260;
+    reguaGuard = setTimeout(concluir, dur + 140);
+    reguaRaf = requestAnimationFrame(function tick(now){
+      if (gen !== reguaGen) return;
+      var p = Math.min(1, (now - t0) / dur);
+      chips.scrollLeft = ini + delta * (1 - Math.pow(1 - p, 3));
+      if (p < 1) reguaRaf = requestAnimationFrame(tick);
+      else concluir();
+    });
+  }
+  $('milMenos').addEventListener('click', function(){ rolarRegua(-1); });
+  $('milMais').addEventListener('click',  function(){ rolarRegua(1);  });
+  chips.addEventListener('scroll', atualizarSetasRegua);
+
+  /* Normaliza a camada só ao sair do campo — corrigir durante a digitação
+     atrapalharia quem está digitando "18" e vê o "1" virar "2". */
+  el.milesimos.addEventListener('change', function(){
+    this.value = milesimosValidos();
+    calcular();
+  });
+  Object.keys(pares).forEach(function(k){
+    $(pares[k]).addEventListener('input', function(){
+      el[k].value = this.value;
+      calcular();
+    });
+  });
+
+  /* setas de faixa: levam o valor ao início da faixa vizinha */
+  document.querySelectorAll('.scale__nav').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var campo = btn.getAttribute('data-scale');
+      var cfg   = ESCALAS[campo];
+      var idx   = Math.max(0, bandaAtual[campo] + parseInt(btn.getAttribute('data-dir'), 10));
+      el[campo].value = Math.max(cfg.piso, idx * cfg.banda);
+      calcular();
+    });
+  });
+
+  calcular();
+})();
+</script>
+</body>
+</html>
