@@ -258,6 +258,44 @@ main{
 .tile__value{-moz-appearance:textfield;appearance:textfield}
 .tile__value:focus{color:var(--ecru)}
 
+/* ===========================  CONDIÇÃO  ================================
+   A mão de obra não é um número solto: são duas condições de pagamento
+   definidas pela empresa. O seletor deixa a regra explícita e evita que
+   alguém digite o valor errado. */
+.condicao{
+  margin-top:14px;padding:20px 22px;
+  background:var(--surface);
+  border:1px solid var(--edge);
+  border-radius:var(--r);
+}
+.condicao__k{
+  font-size:10px;letter-spacing:.24em;text-transform:uppercase;
+  color:var(--cream-38);margin-bottom:14px;
+}
+.condicao__op{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:520px){.condicao__op{grid-template-columns:1fr}}
+.opt{
+  display:flex;flex-direction:column;align-items:flex-start;gap:4px;
+  padding:14px 16px;text-align:left;
+  background:rgba(0,0,0,.26);
+  border:1px solid var(--edge);
+  border-radius:12px;
+  color:var(--cream-60);
+  font-family:var(--sans);cursor:pointer;
+  transition:background .16s ease, border-color .16s ease, color .16s ease;
+}
+.opt:hover{background:rgba(0,0,0,.34);border-color:rgba(213,190,121,.34)}
+.opt:focus-visible{outline:none;box-shadow:var(--ring);border-color:var(--ecru)}
+.opt__t{font-size:14px;font-weight:500}
+.opt__d{font-size:11.5px;color:var(--cream-38);font-variant-numeric:tabular-nums}
+.opt[aria-pressed="true"]{
+  background:rgba(213,190,121,.13);
+  border-color:var(--ecru);
+  color:var(--cream);
+}
+.opt[aria-pressed="true"] .opt__d{color:var(--champagne)}
+.condicao__n{margin:14px 0 0;font-size:11.5px;color:var(--cream-38);line-height:1.45}
+
 /* =============================  LEDGER  ================================= */
 .ledger{
   display:grid;grid-template-columns:1fr 1fr;gap:14px;
@@ -516,12 +554,29 @@ main{
     <div class="tile">
       <div class="tile__top">
         <span class="tile__label">Mão de obra</span>
-        <span class="tile__unit">milésimos</span>
+        <span class="tile__unit">g de ouro / kg</span>
       </div>
-      <input type="number" class="tile__value num" id="mo" value="1.6" step="0.1" min="0"
+      <input type="number" class="tile__value num" id="mo" value="1.6" step="0.4" min="0"
              inputmode="decimal" aria-label="Mão de obra em milésimos">
     </div>
 
+  </section>
+
+  <section class="condicao" role="group" aria-label="Condição de pagamento">
+    <div class="condicao__k">Condição de pagamento</div>
+    <div class="condicao__op">
+      <button type="button" class="opt" data-cond="avista" aria-pressed="true">
+        <span class="opt__t">À vista</span>
+        <span class="opt__d" id="optAvista">1,6 milésimos</span>
+      </button>
+      <button type="button" class="opt" data-cond="prazo" aria-pressed="false">
+        <span class="opt__t">Cartão ou prazo</span>
+        <span class="opt__d" id="optPrazo">2 milésimos</span>
+      </button>
+    </div>
+    <p class="condicao__n" id="condNota">
+      Base de 2 g de ouro por kg de mercadoria, com 20% de desconto à vista.
+    </p>
   </section>
 
   <!-- =========================== LEDGER =========================== -->
@@ -579,7 +634,7 @@ main{
   <p class="formula">
     <span>Base de cálculo</span>
     <code>Peso × (milésimos + M.O.) × cotação ÷ 1000</code>
-    <span>A mão de obra entra em milésimos, como se fosse mais uma camada de ouro.</span>
+    <span>A mão de obra é cobrada em gramas de ouro por quilo de mercadoria, o que equivale a milésimos: 2 g por kg são 2 milésimos.</span>
   </p>
 
 </main>
@@ -613,6 +668,7 @@ main{
           <tr><td>Peso unitário</td><td id="docPeso">—</td></tr>
           <tr><td>Camada de ouro</td><td id="docMil">—</td></tr>
           <tr><td>Mão de obra</td><td id="docMO">—</td></tr>
+          <tr><td>Condição de pagamento</td><td id="docCond">—</td></tr>
           <tr class="em"><td>Milésimos totais</td><td id="docMilTotal">—</td></tr>
         </tbody>
       </table>
@@ -639,7 +695,7 @@ main{
   <section class="doc__note">
     <p><b>Como o valor é calculado.</b>
        <code>Peso × (milésimos + mão de obra) × cotação do ouro ÷ 1000</code>.
-       A mão de obra entra em milésimos, como se fosse mais uma camada de ouro.</p>
+       A mão de obra é cobrada em gramas de ouro por quilo de mercadoria, o que equivale a milésimos: 2 g por kg são 2 milésimos.</p>
     <p><b>Validade.</b> Este orçamento vale para o ouro a
        <b id="docValidade">—</b> o grama. Se a cotação mudar, o valor muda na
        mesma proporção.</p>
@@ -670,11 +726,24 @@ main{
   "use strict";
 
   /* ======================================================================
-     MÃO DE OBRA: parâmetro do proprietário, em milésimos. Editável pela
-     interface e guardado no navegador; o número abaixo é só o ponto de
-     partida, usado na primeira vez que a página abre.
+     MÃO DE OBRA
+     A regra da empresa é cobrar 2 g de ouro para folhear 1 kg de
+     mercadoria. Como 2 g por 1000 g são 2 milésimos, a base entra na
+     fórmula na mesma unidade da camada, sem conversão.
+
+     À vista há 20% de desconto: 2 × 0,80 = 1,6 milésimos.
+     No cartão ou a prazo vale a base cheia: 2 milésimos.
+
+     Mude os dois números abaixo para alterar a política inteira.
      ====================================================================== */
-  var MO_PADRAO = 1.6;
+  var MO_BASE  = 2;      // gramas de ouro por kg de mercadoria
+  var DESCONTO = 0.20;   // desconto para pagamento à vista
+
+  var MO_TABELA = {
+    avista: MO_BASE * (1 - DESCONTO),
+    prazo:  MO_BASE
+  };
+  var ROTULO_COND = {avista:'À vista', prazo:'Cartão ou prazo'};
 
   /* ======================================================================
      WHATSAPP: número que recebe os orçamentos, só dígitos.
@@ -700,8 +769,9 @@ main{
   var dec = new Intl.NumberFormat('pt-BR',{maximumFractionDigits:3});
   var pct = new Intl.NumberFormat('pt-BR',{maximumFractionDigits:0});
 
-  var STORE    = 'wra.precoOuro';
-  var STORE_MO = 'wra.maoDeObra';
+  var STORE      = 'wra.precoOuro';
+  var STORE_MO   = 'wra.maoDeObra';
+  var STORE_COND = 'wra.condicao';
   var SEQ     = 'wra.orcamento.seq';
   var reduce  = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -771,6 +841,31 @@ main{
     });
   }
 
+  /* ---- condição de pagamento ----
+     Os botões apenas escrevem no campo da mão de obra; quem manda no
+     cálculo continua sendo o campo. Assim um valor digitado à mão nunca
+     entra em conflito com o botão marcado. */
+  function moTexto(v){ return dec.format(v) + ' g de ouro por kg'; }
+
+  $('optAvista').textContent = moTexto(MO_TABELA.avista);
+  $('optPrazo').textContent  = moTexto(MO_TABELA.prazo);
+  $('condNota').textContent  =
+    'Base de ' + dec.format(MO_BASE) + ' g de ouro por kg de mercadoria, com ' +
+    dec.format(DESCONTO * 100) + '% de desconto à vista. ' +
+    'Como 1 g por kg equivale a 1 milésimo, a mão de obra soma direto à camada.';
+
+  function condicaoAtual(mo){
+    for (var k in MO_TABELA) if (Math.abs(MO_TABELA[k] - mo) < 0.0001) return k;
+    return null;   // valor digitado fora da tabela
+  }
+
+  document.querySelectorAll('.opt').forEach(function(bt){
+    bt.addEventListener('click', function(){
+      el.mo.value = MO_TABELA[bt.getAttribute('data-cond')];
+      calcular();
+    });
+  });
+
   /* ---- cálculo (idêntico à planilha) ---- */
   var estado = {};
 
@@ -810,14 +905,21 @@ main{
     $('mbGrama').textContent = brl.format(custoGrama);
     $('mbPeca').textContent  = brl.format(valorPeca);
 
+    var cond = condicaoAtual(mo);
+    document.querySelectorAll('.opt').forEach(function(bt){
+      bt.setAttribute('aria-pressed', bt.getAttribute('data-cond') === cond ? 'true' : 'false');
+    });
+
     try {
       localStorage.setItem(STORE, String(ouro));
       localStorage.setItem(STORE_MO, String(mo));
+      if (cond) localStorage.setItem(STORE_COND, cond);
     } catch(e){}
 
     estado = {peso:peso, milesimos:milesimos, mo:mo, ouro:ouro,
               milTotal:milTotal, custoGrama:custoGrama,
-              parcOuro:parcOuro, parcMO:parcMO, valorPeca:valorPeca};
+              parcOuro:parcOuro, parcMO:parcMO, valorPeca:valorPeca,
+              cond:cond, condRotulo:cond ? ROTULO_COND[cond] : null};
 
     /* mudou o cálculo, é outro orçamento: o próximo envio emite novo número */
     numeroAtual = null;
@@ -832,7 +934,8 @@ main{
         new Date().toLocaleDateString('pt-BR'), '',
       'Peso: ' + dec.format(e.peso) + ' g',
       'Camada de ouro: ' + dec.format(e.milesimos) + ' milésimos',
-      'Mão de obra: ' + dec.format(e.mo) + ' milésimos',
+      'Mão de obra: ' + moTexto(e.mo) +
+        (e.condRotulo ? ' (' + e.condRotulo.toLowerCase() + ')' : ''),
       'Cotação do ouro: ' + brl.format(e.ouro) + '/g',
       'Custo por grama: ' + brl.format(e.custoGrama), '',
       'Valor do banho: ' + brl.format(e.valorPeca) + ' por peça'
@@ -895,7 +998,8 @@ main{
 
     $('docPeso').textContent     = dec.format(e.peso) + ' g';
     $('docMil').textContent      = dec.format(e.milesimos) + ' milésimos';
-    $('docMO').textContent       = dec.format(e.mo) + ' milésimos';
+    $('docMO').textContent       = moTexto(e.mo);
+    $('docCond').textContent     = e.condRotulo || 'personalizada';
     $('docMilTotal').textContent = dec.format(e.milesimos + e.mo) + ' milésimos';
 
     $('docOuro').textContent      = brl.format(e.ouro) + ' /g';
@@ -932,7 +1036,8 @@ main{
 
     linhas.push('Peso: ' + dec.format(e.peso) + ' g');
     linhas.push('Camada de ouro: ' + dec.format(e.milesimos) + ' milésimos');
-    linhas.push('Mão de obra: ' + dec.format(e.mo) + ' milésimos');
+    linhas.push('Mão de obra: ' + moTexto(e.mo) +
+                (e.condRotulo ? ' (' + e.condRotulo.toLowerCase() + ')' : ''));
     linhas.push('Milésimos totais: ' + dec.format(e.milTotal));
     linhas.push('Cotação do ouro: ' + brl.format(e.ouro) + '/g');
     linhas.push('Custo por grama: ' + brl.format(e.custoGrama));
@@ -958,8 +1063,8 @@ main{
     if (saved && parseFloat(saved) > 0) el.ouro.value = parseFloat(saved);
     var savedMo = localStorage.getItem(STORE_MO);
     el.mo.value = (savedMo !== null && isFinite(parseFloat(savedMo)))
-                ? parseFloat(savedMo) : MO_PADRAO;
-  } catch(e){ el.mo.value = MO_PADRAO; }
+                ? parseFloat(savedMo) : MO_TABELA.avista;
+  } catch(e){ el.mo.value = MO_TABELA.avista; }
 
   campos.forEach(function(id){ el[id].addEventListener('input', calcular); });
 
