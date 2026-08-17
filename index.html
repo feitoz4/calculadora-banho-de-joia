@@ -280,6 +280,10 @@ main{
   margin-top:14px;
 }
 @media (max-width:900px){.ledger{grid-template-columns:1fr}}
+/* No HTML os dados vêm primeiro, para no celular a ordem visual bater com a
+   de leitura e navegação: preenche os dados e termina nos botões. No desktop
+   o fechamento volta para a coluna da esquerda. */
+@media (min-width:901px){.card--fechamento{order:-1}}
 
 .card{
   padding:26px;
@@ -541,7 +545,23 @@ main{
   <!-- =========================== LEDGER =========================== -->
   <section class="ledger">
 
-    <div class="card">
+    <div class="card card--dados">
+      <h2 class="card__title">Dados do orçamento</h2>
+      <div class="txt">
+        <label for="cliente">Cliente (opcional)</label>
+        <input type="text" id="cliente" placeholder="Nome do cliente" autocomplete="off">
+      </div>
+      <div class="txt">
+        <label for="descricao">Descrição da peça (opcional)</label>
+        <input type="text" id="descricao" placeholder="Corrente veneziana 45 cm" autocomplete="off">
+      </div>
+      <div class="line" style="margin-top:20px;border-top:1px solid rgba(213,190,121,.08);border-bottom:none;padding-top:16px">
+        <span class="line__k">Cotação usada<small>salva neste navegador</small></span>
+        <span class="line__v num" id="cotEcho">R$ 650,00 /g</span>
+      </div>
+    </div>
+
+    <div class="card card--fechamento">
       <h2 class="card__title">Fechamento</h2>
 
       <div class="line">
@@ -569,22 +589,6 @@ main{
         </button>
         <button type="button" class="btn btn--line" id="btnCopiar">Copiar</button>
         <button type="button" class="btn btn--line" id="btnImprimir">Imprimir</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2 class="card__title">Dados do orçamento</h2>
-      <div class="txt">
-        <label for="cliente">Cliente (opcional)</label>
-        <input type="text" id="cliente" placeholder="Nome do cliente" autocomplete="off">
-      </div>
-      <div class="txt">
-        <label for="descricao">Descrição da peça (opcional)</label>
-        <input type="text" id="descricao" placeholder="Corrente veneziana 45 cm" autocomplete="off">
-      </div>
-      <div class="line" style="margin-top:20px;border-top:1px solid rgba(213,190,121,.08);border-bottom:none;padding-top:16px">
-        <span class="line__k">Cotação usada<small>salva neste navegador</small></span>
-        <span class="line__v num" id="cotEcho">R$ 650,00 /g</span>
       </div>
     </div>
 
@@ -935,8 +939,6 @@ main{
     var linhas  = [];
 
     linhas.push('*WRA folheados*');
-    linhas.push('Orçamento de banho nº ' + garantirNumero() + ', ' +
-                new Date().toLocaleDateString('pt-BR'));
     linhas.push('');
     if (cliente) linhas.push('*Cliente:* ' + cliente);
     if (peca)    linhas.push('*Peça:* ' + peca);
