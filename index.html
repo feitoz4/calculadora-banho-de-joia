@@ -219,15 +219,6 @@ main{
 .tile:hover{background:var(--surface-2);border-color:rgba(213,190,121,.22)}
 .tile:focus-within{border-color:var(--edge-2);background:var(--surface-2)}
 
-/* tile travado: parâmetro do proprietário, não da peça */
-.tile--fixed,
-.tile--fixed:hover{
-  background:rgba(0,0,0,.20);
-  border-color:rgba(213,190,121,.09);
-}
-.tile--fixed .tile__value{opacity:.9}
-.lock__ic{width:9px;height:9px;fill:currentColor;flex:none;opacity:.75}
-
 .tile__top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:2px}
 .tile__label{
   display:inline-flex;align-items:center;gap:7px;
@@ -261,13 +252,6 @@ main{
   background:rgba(0,0,0,.4);
   border-color:var(--ecru);
   box-shadow:var(--ring);
-}
-/* o valor travado perde a caixa. O contraste entre ter e não ter campo já
-   ensina o que aceita edição. O recuo continua igual nos três, para os
-   números ficarem alinhados. */
-.tile--fixed .tile__value,
-.tile--fixed .tile__value:hover{
-  background:transparent;border-color:transparent;cursor:default;
 }
 .tile__value::-webkit-outer-spin-button,
 .tile__value::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
@@ -529,15 +513,13 @@ main{
       <input type="number" class="tile__value num" id="milesimos" value="3" step="1" min="2" max="20" inputmode="numeric" aria-label="Milésimos de ouro, de 2 a 20">
     </div>
 
-    <div class="tile tile--fixed">
+    <div class="tile">
       <div class="tile__top">
-        <span class="tile__label">
-          <svg class="lock__ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V11a2 2 0 0 0-2-2h-1V6a5 5 0 0 0-5-5zm0 2a3 3 0 0 1 3 3v3H9V6a3 3 0 0 1 3-3z"/></svg>
-          Mão de obra
-        </span>
-        <span class="tile__unit">valor fixo</span>
+        <span class="tile__label">Mão de obra</span>
+        <span class="tile__unit">milésimos</span>
       </div>
-      <div class="tile__value num" id="moView">1,6</div>
+      <input type="number" class="tile__value num" id="mo" value="1.6" step="0.1" min="0"
+             inputmode="decimal" aria-label="Mão de obra em milésimos">
     </div>
 
   </section>
@@ -688,10 +670,11 @@ main{
   "use strict";
 
   /* ======================================================================
-     MÃO DE OBRA: parâmetro do proprietário, em milésimos.
-     Não é editável pela interface. Para alterar, troque o número abaixo.
+     MÃO DE OBRA: parâmetro do proprietário, em milésimos. Editável pela
+     interface e guardado no navegador; o número abaixo é só o ponto de
+     partida, usado na primeira vez que a página abre.
      ====================================================================== */
-  var MAO_DE_OBRA = 1.6;
+  var MO_PADRAO = 1.6;
 
   /* ======================================================================
      WHATSAPP: número que recebe os orçamentos, só dígitos.
@@ -700,7 +683,7 @@ main{
   var WHATSAPP = '558835722582';   // +55 88 3572-2582
 
   var $ = function(id){ return document.getElementById(id); };
-  var campos = ['peso','milesimos','ouro'];
+  var campos = ['peso','milesimos','ouro','mo'];
   var el = {};
   campos.forEach(function(id){ el[id] = $(id); });
 
@@ -717,7 +700,8 @@ main{
   var dec = new Intl.NumberFormat('pt-BR',{maximumFractionDigits:3});
   var pct = new Intl.NumberFormat('pt-BR',{maximumFractionDigits:0});
 
-  var STORE   = 'wra.precoOuro';
+  var STORE    = 'wra.precoOuro';
+  var STORE_MO = 'wra.maoDeObra';
   var SEQ     = 'wra.orcamento.seq';
   var reduce  = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -793,7 +777,7 @@ main{
   function calcular(){
     var peso      = val(el.peso);
     var milesimos = milesimosValidos();
-    var mo        = MAO_DE_OBRA;
+    var mo        = val(el.mo);
     var ouro      = val(el.ouro);
 
     var milTotal   = milesimos + mo;           // G3 = B4 + C4
@@ -807,7 +791,6 @@ main{
 
     ajustarCotacao();
     animarValor(valorPeca);
-    $('moView').textContent     = dec.format(mo);
     $('custoGrama').textContent = brl.format(custoGrama);
     $('milTotal').textContent   = dec.format(milTotal);
     $('parcOuro').textContent   = brl.format(parcOuro);
@@ -827,7 +810,10 @@ main{
     $('mbGrama').textContent = brl.format(custoGrama);
     $('mbPeca').textContent  = brl.format(valorPeca);
 
-    try { localStorage.setItem(STORE, String(ouro)); } catch(e){}
+    try {
+      localStorage.setItem(STORE, String(ouro));
+      localStorage.setItem(STORE_MO, String(mo));
+    } catch(e){}
 
     estado = {peso:peso, milesimos:milesimos, mo:mo, ouro:ouro,
               milTotal:milTotal, custoGrama:custoGrama,
@@ -970,7 +956,10 @@ main{
   try {
     var saved = localStorage.getItem(STORE);
     if (saved && parseFloat(saved) > 0) el.ouro.value = parseFloat(saved);
-  } catch(e){}
+    var savedMo = localStorage.getItem(STORE_MO);
+    el.mo.value = (savedMo !== null && isFinite(parseFloat(savedMo)))
+                ? parseFloat(savedMo) : MO_PADRAO;
+  } catch(e){ el.mo.value = MO_PADRAO; }
 
   campos.forEach(function(id){ el[id].addEventListener('input', calcular); });
 
