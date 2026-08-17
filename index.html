@@ -98,7 +98,7 @@ body{
   max-width:min(52vw,240px);object-fit:contain;object-position:left center;
 }
 
-/* cotação do ouro — vive no topo, é o dado de mercado */
+/* cotação do ouro: fica no topo por ser dado de mercado, não da peça */
 .quote{
   display:flex;align-items:center;gap:10px;
   padding:7px 15px;
@@ -118,6 +118,22 @@ body{
   font-family:var(--sans);font-size:19px;font-weight:500;
   font-variant-numeric:tabular-nums;color:var(--ecru);
   text-align:left;
+  /* mesma caixa de campo dos tiles, em escala menor */
+  padding:3px 9px;
+  background:rgba(0,0,0,.3);
+  border:1px solid var(--edge);
+  border-radius:8px;
+  cursor:text;
+  transition:border-color .18s ease, background .18s ease, box-shadow .18s ease;
+}
+.quote__in input:hover{background:rgba(0,0,0,.4);border-color:rgba(213,190,121,.34)}
+.quote__in input:focus{border-color:var(--ecru);box-shadow:var(--ring)}
+
+/* Onde houver suporte, o próprio navegador dimensiona o campo pelo conteúdo.
+   É imune a erro de medição e à fonte que carregar. O JS mede só como
+   reserva, para navegadores sem `field-sizing`. */
+@supports (field-sizing:content){
+  .quote__in input{field-sizing:content;width:auto;min-width:2ch}
 }
 @media (max-width:620px){
   .topbar{padding:14px 18px;gap:12px}
@@ -183,9 +199,7 @@ main{
 /* ==============================  TILES  ================================= */
 .tiles{
   display:grid;
-  /* minmax(0,1fr): sem isso as trilhas não encolhem e a régua de milésimos
-     estoura o tile em vez de rolar */
-  grid-template-columns:repeat(4,minmax(0,1fr));
+  grid-template-columns:repeat(3,minmax(0,1fr));
   gap:14px;
   /* altura natural por tile: mantém os sliders na mesma linha mesmo com o
      teclado de milésimos alongando o tile da camada */
@@ -196,7 +210,7 @@ main{
 
 .tile{
   display:flex;flex-direction:column;min-width:0;
-  padding:22px 22px 18px;
+  padding:22px;
   background:var(--surface);
   border:1px solid var(--edge);
   border-radius:var(--r);
@@ -205,22 +219,18 @@ main{
 .tile:hover{background:var(--surface-2);border-color:rgba(213,190,121,.22)}
 .tile:focus-within{border-color:var(--edge-2);background:var(--surface-2)}
 
-/* tile travado — parâmetro do proprietário, não da peça */
+/* tile travado: parâmetro do proprietário, não da peça */
 .tile--fixed,
 .tile--fixed:hover{
   background:rgba(0,0,0,.20);
   border-color:rgba(213,190,121,.09);
 }
 .tile--fixed .tile__value{opacity:.9}
-.lock{
-  display:inline-flex;align-items:center;gap:6px;
-  font-size:10px;letter-spacing:.2em;text-transform:uppercase;
-  color:var(--cream-38);
-}
-.lock svg{width:10px;height:10px;fill:currentColor;flex:none}
+.lock__ic{width:9px;height:9px;fill:currentColor;flex:none;opacity:.75}
 
 .tile__top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:2px}
 .tile__label{
+  display:inline-flex;align-items:center;gap:7px;
   font-size:10px;letter-spacing:.24em;text-transform:uppercase;
   color:var(--cream-38);white-space:nowrap;
 }
@@ -231,115 +241,38 @@ main{
   background:transparent;border:none;outline:none;padding:0;
   font-family:var(--display);
   font-size:clamp(2.1rem,4vw,2.75rem);
-  /* height explícita: sem ela, a div do valor fixo e os inputs divergem 2px */
-  font-weight:400;line-height:1.15;height:1.15em;
+  /* height explícita: sem ela, a div do valor travado e os inputs divergem
+     2px. O +18px cobre 8px de respiro em cima e embaixo mais as bordas. */
+  font-weight:400;line-height:1.15;height:calc(1.15em + 18px);
   letter-spacing:-.02em;
   color:var(--cream);
   font-variant-numeric:tabular-nums;
-  transition:color .18s ease;
+  /* caixa de campo: é o formato que sinaliza "digite aqui" */
+  padding:8px 12px;
+  background:rgba(0,0,0,.26);
+  border:1px solid var(--edge);
+  border-radius:10px;
+  cursor:text;
+  transition:color .18s ease, border-color .18s ease, background .18s ease, box-shadow .18s ease;
+}
+.tile__value:hover{background:rgba(0,0,0,.34);border-color:rgba(213,190,121,.34)}
+.tile__value:focus{
+  color:var(--ecru);
+  background:rgba(0,0,0,.4);
+  border-color:var(--ecru);
+  box-shadow:var(--ring);
+}
+/* o valor travado perde a caixa. O contraste entre ter e não ter campo já
+   ensina o que aceita edição. O recuo continua igual nos três, para os
+   números ficarem alinhados. */
+.tile--fixed .tile__value,
+.tile--fixed .tile__value:hover{
+  background:transparent;border-color:transparent;cursor:default;
 }
 .tile__value::-webkit-outer-spin-button,
 .tile__value::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .tile__value{-moz-appearance:textfield;appearance:textfield}
 .tile__value:focus{color:var(--ecru)}
-
-.tile__foot{margin-top:auto;padding-top:16px;min-width:0}
-
-/* slider ----------------------------------------------------------------- */
-.rng{
-  -webkit-appearance:none;appearance:none;
-  width:100%;height:16px;background:transparent;cursor:pointer;display:block;
-  margin:0;   /* o navegador aplica 2px por padrão e desalinha os tiles */
-}
-.rng::-webkit-slider-runnable-track{height:2px;border-radius:2px;background:rgba(213,190,121,.16)}
-.rng::-webkit-slider-thumb{
-  -webkit-appearance:none;
-  width:12px;height:12px;border-radius:50%;
-  background:var(--ecru);margin-top:-5px;
-  box-shadow:0 0 0 0 rgba(213,190,121,.22);
-  transition:box-shadow .2s ease, transform .2s ease;
-}
-.rng:hover::-webkit-slider-thumb{box-shadow:0 0 0 7px rgba(213,190,121,.13)}
-.rng:active::-webkit-slider-thumb{transform:scale(1.15)}
-.rng:focus-visible{outline:none}
-.rng:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 7px rgba(213,190,121,.3)}
-.rng::-moz-range-track{height:2px;border-radius:2px;background:rgba(213,190,121,.16)}
-.rng::-moz-range-thumb{width:12px;height:12px;border:none;border-radius:50%;background:var(--ecru)}
-/* mesma altura de .rng, para o tile sem slider alinhar com os demais */
-.rng-ghost{height:16px}
-
-/* faixa do slider -------------------------------------------------------- */
-.scale{
-  display:flex;align-items:center;justify-content:space-between;gap:6px;
-  margin-top:8px;
-}
-.scale__nav{
-  width:22px;height:22px;flex:none;
-  display:grid;place-items:center;padding:0;
-  background:transparent;
-  border:1px solid var(--edge);
-  border-radius:50%;
-  color:var(--cream-38);
-  font-family:var(--sans);font-size:13px;line-height:1;
-  cursor:pointer;
-  transition:border-color .16s ease, color .16s ease, background .16s ease;
-}
-.scale__nav:hover:not(:disabled){border-color:var(--edge-2);color:var(--cream);background:rgba(213,190,121,.07)}
-.scale__nav:focus-visible{outline:none;box-shadow:var(--ring)}
-.scale__nav:disabled{opacity:.25;cursor:default}
-.scale__label{
-  font-size:10px;letter-spacing:.14em;text-transform:uppercase;
-  color:var(--cream-38);font-variant-numeric:tabular-nums;white-space:nowrap;
-}
-/* faixa fechada: sem setas, o rótulo só informa os limites */
-.scale--static{justify-content:center;height:22px}
-
-/* chips de milésimos ----------------------------------------------------- */
-/* régua de milésimos: setas ‹ › ladeando a faixa rolável.
-   Ocupa a mesma linha de 22px dos rótulos de faixa dos outros tiles. */
-.regua{
-  display:flex;align-items:center;gap:6px;
-  margin-top:8px;min-width:0;height:22px;
-}
-.chips{
-  display:flex;
-  flex-wrap:nowrap;
-  align-items:center;
-  gap:4px;
-  flex:1;
-  height:22px;
-  min-width:0;
-  /* offsetLeft dos chips precisa ser relativo a este contêiner,
-     senão a conta que centraliza o chip ativo mede contra <main> */
-  position:relative;
-  overflow-x:auto;
-  overscroll-behavior-x:contain;
-  scroll-snap-type:x proximity;
-  scrollbar-width:none;
-  -ms-overflow-style:none;
-  /* esmaece as pontas, sinalizando que há mais números fora da vista */
-  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 12px,#000 calc(100% - 12px),transparent 100%);
-  mask-image:linear-gradient(90deg,transparent 0,#000 12px,#000 calc(100% - 12px),transparent 100%);
-}
-.chips::-webkit-scrollbar{display:none}
-.chip{
-  flex:0 0 auto;
-  scroll-snap-align:center;
-  height:22px;
-  display:flex;align-items:center;justify-content:center;
-  font-family:var(--sans);font-size:11px;font-weight:500;
-  font-variant-numeric:tabular-nums;
-  padding:0 9px;
-  background:transparent;
-  border:1px solid var(--edge);
-  border-radius:7px;
-  color:var(--cream-60);
-  cursor:pointer;
-  transition:all .16s ease;
-}
-.chip:hover{border-color:var(--edge-2);color:var(--cream)}
-.chip:focus-visible{outline:none;box-shadow:var(--ring)}
-.chip[aria-pressed="true"]{background:var(--ecru);border-color:var(--ecru);color:var(--bistre)}
 
 /* =============================  LEDGER  ================================= */
 .ledger{
@@ -418,6 +351,8 @@ main{
 .btn--line{background:transparent;border:1px solid var(--edge-2);color:var(--champagne)}
 .btn--line:hover{background:rgba(213,190,121,.09);border-color:var(--ecru)}
 .btn:focus-visible{outline:none;box-shadow:var(--ring)}
+.btn--wide{flex:1 1 100%}
+.btn__ic{width:15px;height:15px;fill:currentColor;flex:none;margin-right:9px}
 
 /* ===========================  RODAPÉ  =================================== */
 .formula{
@@ -546,7 +481,7 @@ main{
 
   <!-- ============================ HERO ============================ -->
   <section class="hero">
-    <span class="eyebrow">Valor do banho · por peça</span>
+    <span class="eyebrow">Valor do banho por peça</span>
     <div class="hero__value num" id="valorPeca" aria-live="polite">R$ 10,46</div>
 
     <div class="hero__meta">
@@ -580,65 +515,25 @@ main{
         <span class="tile__unit">gramas</span>
       </div>
       <input type="number" class="tile__value num" id="peso" value="3.5" step="0.1" min="0" inputmode="decimal" aria-label="Peso da peça em gramas">
-      <div class="tile__foot">
-        <input type="range" class="rng" id="pesoR" min="0" max="100" step="0.1" value="3.5" aria-label="Ajustar peso">
-        <div class="scale">
-          <button type="button" class="scale__nav" data-scale="peso" data-dir="-1" aria-label="Faixa anterior de peso">&lsaquo;</button>
-          <span class="scale__label" id="pesoEscala">0 – 100 g</span>
-          <button type="button" class="scale__nav" data-scale="peso" data-dir="1" aria-label="Próxima faixa de peso">&rsaquo;</button>
-        </div>
-      </div>
     </div>
 
     <div class="tile">
       <div class="tile__top">
         <span class="tile__label">Camada</span>
-        <span class="tile__unit">milésimos</span>
+        <span class="tile__unit">2 a 20 milésimos</span>
       </div>
       <input type="number" class="tile__value num" id="milesimos" value="3" step="1" min="2" max="20" inputmode="numeric" aria-label="Milésimos de ouro, de 2 a 20">
-      <div class="tile__foot">
-        <input type="range" class="rng" id="milesimosR" min="2" max="20" step="1" value="3" aria-label="Ajustar milésimos">
-        <div class="regua">
-          <button type="button" class="scale__nav" id="milMenos" aria-label="Ver milésimos anteriores">&lsaquo;</button>
-          <div class="chips" id="chips" role="group" aria-label="Milésimos de 2 a 20"></div>
-          <button type="button" class="scale__nav" id="milMais" aria-label="Ver próximos milésimos">&rsaquo;</button>
-        </div>
-      </div>
     </div>
 
     <div class="tile tile--fixed">
       <div class="tile__top">
-        <span class="tile__label">Mão de obra</span>
-        <span class="tile__unit">milésimos</span>
+        <span class="tile__label">
+          <svg class="lock__ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V11a2 2 0 0 0-2-2h-1V6a5 5 0 0 0-5-5zm0 2a3 3 0 0 1 3 3v3H9V6a3 3 0 0 1 3-3z"/></svg>
+          Mão de obra
+        </span>
+        <span class="tile__unit">valor fixo</span>
       </div>
       <div class="tile__value num" id="moView">1,6</div>
-      <div class="tile__foot">
-        <!-- ocupa o lugar do slider ausente, para este tile ter a mesma
-             altura dos vizinhos -->
-        <div class="rng-ghost" aria-hidden="true"></div>
-        <div class="scale scale--static">
-          <span class="lock">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V11a2 2 0 0 0-2-2h-1V6a5 5 0 0 0-5-5zm0 2a3 3 0 0 1 3 3v3H9V6a3 3 0 0 1 3-3z"/></svg>
-            Valor fixo
-          </span>
-        </div>
-      </div>
-    </div>
-
-    <div class="tile">
-      <div class="tile__top">
-        <span class="tile__label">Quantidade</span>
-        <span class="tile__unit">peças</span>
-      </div>
-      <input type="number" class="tile__value num" id="qtd" value="1" step="1" min="1" inputmode="numeric" aria-label="Quantidade de peças">
-      <div class="tile__foot">
-        <input type="range" class="rng" id="qtdR" min="1" max="100" step="1" value="1" aria-label="Ajustar quantidade">
-        <div class="scale">
-          <button type="button" class="scale__nav" data-scale="qtd" data-dir="-1" aria-label="Faixa anterior de quantidade">&lsaquo;</button>
-          <span class="scale__label" id="qtdEscala">1 – 100 pç</span>
-          <button type="button" class="scale__nav" data-scale="qtd" data-dir="1" aria-label="Próxima faixa de quantidade">&rsaquo;</button>
-        </div>
-      </div>
     </div>
 
   </section>
@@ -650,8 +545,8 @@ main{
       <h2 class="card__title">Fechamento</h2>
 
       <div class="line">
-        <span class="line__k">Valor unitário<small>por peça banhada</small></span>
-        <span class="line__v num" id="unit">R$ 10,46</span>
+        <span class="line__k">Custo por grama<small>milésimos totais × cotação ÷ 1000</small></span>
+        <span class="line__v num" id="lGrama">R$ 2,99</span>
       </div>
       <div class="line">
         <span class="line__k">Parcela de ouro<small>por peça</small></span>
@@ -663,25 +558,29 @@ main{
       </div>
 
       <div class="grand">
-        <span class="grand__k">Total<small id="qtdLabel">1 peça</small></span>
+        <span class="grand__k">Valor do banho<small>por peça</small></span>
         <span class="grand__v num" id="total">R$ 10,46</span>
       </div>
 
       <div class="actions">
-        <button type="button" class="btn btn--gold" id="btnCopiar">Copiar orçamento</button>
-        <button type="button" class="btn btn--line" id="btnImprimir">Imprimir orçamento</button>
+        <button type="button" class="btn btn--gold btn--wide" id="btnZap">
+          <svg class="btn__ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91C21.96 6.45 17.5 2 12.04 2zm0 18.15h-.01a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.19 8.19 0 0 1-1.26-4.38c0-4.54 3.7-8.23 8.25-8.23 2.2 0 4.27.86 5.83 2.42a8.19 8.19 0 0 1 2.41 5.82c0 4.54-3.69 8.23-8.24 8.23zm4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.24-.64.8-.79.97-.14.16-.29.18-.54.06-.25-.13-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.01-.38.11-.5.11-.11.25-.29.37-.43.13-.15.17-.25.25-.41.09-.17.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.4-.42-.56-.43h-.47c-.17 0-.43.06-.66.31-.22.25-.86.85-.86 2.07 0 1.22.89 2.4 1.01 2.56.12.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.06-.11-.22-.17-.47-.29z"/></svg>
+          Enviar no WhatsApp
+        </button>
+        <button type="button" class="btn btn--line" id="btnCopiar">Copiar</button>
+        <button type="button" class="btn btn--line" id="btnImprimir">Imprimir</button>
       </div>
     </div>
 
     <div class="card">
-      <h2 class="card__title">Dados do orçamento impresso</h2>
+      <h2 class="card__title">Dados do orçamento</h2>
       <div class="txt">
-        <label for="cliente">Cliente</label>
-        <input type="text" id="cliente" placeholder="Opcional — nome do cliente" autocomplete="off">
+        <label for="cliente">Cliente (opcional)</label>
+        <input type="text" id="cliente" placeholder="Nome do cliente" autocomplete="off">
       </div>
       <div class="txt">
-        <label for="descricao">Descrição da peça</label>
-        <input type="text" id="descricao" placeholder="Opcional — ex.: corrente veneziana 45 cm" autocomplete="off">
+        <label for="descricao">Descrição da peça (opcional)</label>
+        <input type="text" id="descricao" placeholder="Corrente veneziana 45 cm" autocomplete="off">
       </div>
       <div class="line" style="margin-top:20px;border-top:1px solid rgba(213,190,121,.08);border-bottom:none;padding-top:16px">
         <span class="line__k">Cotação usada<small>salva neste navegador</small></span>
@@ -694,12 +593,12 @@ main{
   <p class="formula">
     <span>Base de cálculo</span>
     <code>Peso × (milésimos + M.O.) × cotação ÷ 1000</code>
-    <span>A mão de obra é cobrada em milésimos, como camada adicional de ouro.</span>
+    <span>A mão de obra entra em milésimos, como se fosse mais uma camada de ouro.</span>
   </p>
 
 </main>
 
-<!-- ============ ORÇAMENTO — só aparece na impressão / PDF ============ -->
+<!-- ============ ORÇAMENTO: só aparece na impressão / PDF ============ -->
 <div class="doc" id="doc">
 
   <header class="doc__head">
@@ -747,18 +646,17 @@ main{
   </section>
 
   <section class="doc__total">
-    <div class="doc__cell doc__cell--unit"><span>Valor unitário</span><b id="docUnit">—</b></div>
-    <div class="doc__cell doc__cell--qty"><span>Peças</span><b id="docQtd">—</b></div>
-    <div class="doc__cell doc__cell--grand"><span>Total do orçamento</span><b id="docTotal">—</b></div>
+    <div class="doc__cell doc__cell--unit"><span>Base de cálculo</span><b id="docBase">—</b></div>
+    <div class="doc__cell doc__cell--grand"><span>Valor do banho por peça</span><b id="docTotal">—</b></div>
   </section>
 
   <section class="doc__note">
-    <p><b>Base de cálculo.</b>
+    <p><b>Como o valor é calculado.</b>
        <code>Peso × (milésimos + mão de obra) × cotação do ouro ÷ 1000</code>.
-       A mão de obra é cobrada em milésimos, como camada adicional de ouro.</p>
-    <p><b>Validade.</b> Os valores acima consideram a cotação de
-       <b id="docValidade">—</b> por grama de ouro. Qualquer variação na cotação
-       altera proporcionalmente o valor deste orçamento.</p>
+       A mão de obra entra em milésimos, como se fosse mais uma camada de ouro.</p>
+    <p><b>Validade.</b> Este orçamento vale para o ouro a
+       <b id="docValidade">—</b> o grama. Se a cotação mudar, o valor muda na
+       mesma proporção.</p>
   </section>
 
   <footer class="doc__foot">
@@ -772,12 +670,12 @@ main{
 
 <div class="mobilebar" aria-hidden="true">
   <div>
-    <div class="k">Por peça</div>
-    <div class="v num" id="mbPeca">R$ 10,46</div>
+    <div class="k">Por grama</div>
+    <div class="v num" id="mbGrama">R$ 2,99</div>
   </div>
   <div style="text-align:right">
-    <div class="k">Total</div>
-    <div class="v num" id="mbTotal">R$ 10,46</div>
+    <div class="k">Valor do banho</div>
+    <div class="v num" id="mbPeca">R$ 10,46</div>
   </div>
 </div>
 
@@ -786,31 +684,21 @@ main{
   "use strict";
 
   /* ======================================================================
-     MÃO DE OBRA — parâmetro do proprietário, em milésimos.
+     MÃO DE OBRA: parâmetro do proprietário, em milésimos.
      Não é editável pela interface. Para alterar, troque o número abaixo.
      ====================================================================== */
   var MAO_DE_OBRA = 1.6;
 
+  /* ======================================================================
+     WHATSAPP: número que recebe os orçamentos, só dígitos.
+     55 (país) + 88 (DDD) + o número. Troque aqui se mudar.
+     ====================================================================== */
+  var WHATSAPP = '558835722582';   // +55 88 3572-2582
+
   var $ = function(id){ return document.getElementById(id); };
-  var campos = ['peso','milesimos','ouro','qtd'];
+  var campos = ['peso','milesimos','ouro'];
   var el = {};
   campos.forEach(function(id){ el[id] = $(id); });
-
-  /* sliders espelhados nos campos numéricos */
-  var pares = {peso:'pesoR', milesimos:'milesimosR', qtd:'qtdR'};
-
-  /* ----------------------------------------------------------------------
-     FAIXAS DO SLIDER
-     O campo numérico aceita qualquer valor, sem teto. O slider percorre uma
-     faixa por vez (0–100, 100–200, ...), navegável pelas setas ‹ ›. Digitar
-     um valor fora da faixa atual salta automaticamente para a faixa certa.
-     `banda` é o tamanho de cada faixa — altere aqui se quiser outro passo.
-     ---------------------------------------------------------------------- */
-  var ESCALAS = {
-    peso: {banda:100, sufixo:' g',  piso:0},
-    qtd:  {banda:100, sufixo:' pç', piso:1}
-  };
-  var bandaAtual = {peso:0, qtd:0};
 
   /* A camada tem faixa fechada: de 2 a 20, só inteiros. */
   var MIL_MIN = 2, MIL_MAX = 20;
@@ -821,35 +709,12 @@ main{
     return Math.min(MIL_MAX, Math.max(MIL_MIN, n));
   }
 
-  function aplicarFaixa(campo, valor){
-    var cfg = ESCALAS[campo];
-    var idx = Math.floor(valor / cfg.banda);
-    if (!isFinite(idx) || idx < 0) idx = 0;
-    bandaAtual[campo] = idx;
-
-    var lo = Math.max(cfg.piso, idx * cfg.banda);
-    var hi = (idx + 1) * cfg.banda;
-
-    var r = $(pares[campo]);
-    r.min   = lo;
-    r.max   = hi;
-    r.value = Math.min(hi, Math.max(lo, valor));
-
-    $(campo + 'Escala').textContent = dec.format(lo) + ' – ' + dec.format(hi) + cfg.sufixo;
-
-    var voltar = document.querySelector('.scale__nav[data-scale="' + campo + '"][data-dir="-1"]');
-    if (voltar) voltar.disabled = (idx === 0);
-  }
-
   var brl = new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:2});
   var dec = new Intl.NumberFormat('pt-BR',{maximumFractionDigits:3});
   var pct = new Intl.NumberFormat('pt-BR',{maximumFractionDigits:0});
 
   var STORE   = 'wra.precoOuro';
   var SEQ     = 'wra.orcamento.seq';
-  /* todos os inteiros da faixa: 2, 3, 4, ... 20 */
-  var PRESETS = [];
-  for (var p = MIL_MIN; p <= MIL_MAX; p++) PRESETS.push(p);
   var reduce  = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   function val(input){
@@ -858,8 +723,8 @@ main{
   }
 
   /* ----------------------------------------------------------------------
-     Largura do campo de cotação medida no texto real, e não em `ch` — a
-     unidade `ch` diverge da largura do dígito conforme a fonte que carregar
+     Largura do campo de cotação medida no texto real, e não em `ch`. Essa
+     unidade diverge da largura do dígito conforme a fonte que carregar
      (Helvetica Neue, Inter ou Arial), deixando folga ou cortando o número.
      ---------------------------------------------------------------------- */
   var medidor = document.createElement('span');
@@ -867,7 +732,11 @@ main{
   medidor.style.cssText = 'position:absolute;left:-9999px;top:0;white-space:pre;visibility:hidden';
   document.body.appendChild(medidor);
 
+  var larguraNativa = !!(window.CSS && CSS.supports && CSS.supports('field-sizing','content'));
+
   function ajustarCotacao(){
+    if (larguraNativa) return;   // o CSS já resolve, sem medir nada
+
     var i  = el.ouro;
     var cs = getComputedStyle(i);
     medidor.style.fontFamily         = cs.fontFamily;
@@ -876,43 +745,13 @@ main{
     medidor.style.letterSpacing      = cs.letterSpacing;
     medidor.style.fontVariantNumeric = cs.fontVariantNumeric;
     medidor.textContent = i.value || '0';
-    i.style.width = Math.max(22, Math.ceil(medidor.getBoundingClientRect().width) + 2) + 'px';
-  }
 
-  /* ---- chips ---- */
-  var chips = $('chips');
-  PRESETS.forEach(function(v){
-    var b = document.createElement('button');
-    b.type='button'; b.className='chip'; b.textContent=v;
-    b.setAttribute('aria-pressed','false');
-    b.addEventListener('click', function(){ el.milesimos.value = v; calcular(); });
-    chips.appendChild(b);
-  });
-  function syncChips(mil){
-    var ativo = null;
-    Array.prototype.forEach.call(chips.children, function(b){
-      var marcado = parseFloat(b.textContent) === mil;
-      b.setAttribute('aria-pressed', marcado ? 'true' : 'false');
-      if (marcado) ativo = b;
-    });
-
-    /* traz o chip ativo para a vista sem mexer na rolagem da página —
-       scrollIntoView poderia arrastar o documento inteiro */
-    if (ativo){
-      var ini = ativo.offsetLeft;
-      var fim = ini + ativo.offsetWidth;
-      if (ini < chips.scrollLeft + 12 || fim > chips.scrollLeft + chips.clientWidth - 12){
-        chips.scrollLeft = ini - (chips.clientWidth - ativo.offsetWidth) / 2;
-      }
-    }
-    atualizarSetasRegua();
-  }
-
-  /* as setas refletem a posição da rolagem, não o valor selecionado */
-  function atualizarSetasRegua(){
-    var fim = chips.scrollWidth - chips.clientWidth;
-    $('milMenos').disabled = chips.scrollLeft <= 1;
-    $('milMais').disabled  = chips.scrollLeft >= fim - 1;
+    /* box-sizing é border-box: a largura precisa incluir recuo e bordas,
+       lidos do CSS para não desencontrar se o estilo mudar */
+    var extra = parseFloat(cs.paddingLeft)     + parseFloat(cs.paddingRight) +
+                parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth);
+    var texto = Math.ceil(medidor.getBoundingClientRect().width);
+    i.style.width = Math.max(22 + extra, texto + 4 + extra) + 'px';
   }
 
   /* ---- animação do número principal ----
@@ -952,7 +791,6 @@ main{
     var milesimos = milesimosValidos();
     var mo        = MAO_DE_OBRA;
     var ouro      = val(el.ouro);
-    var qtd       = Math.max(1, Math.floor(val(el.qtd)) || 1);
 
     var milTotal   = milesimos + mo;           // G3 = B4 + C4
     var custoGrama = milTotal * ouro / 1000;   // I3 = G3 * D4 / 1000
@@ -960,7 +798,6 @@ main{
 
     var parcOuro = peso * milesimos * ouro / 1000;
     var parcMO   = peso * mo * ouro / 1000;
-    var totalPed = valorPeca * qtd;
 
     var pOuro = milTotal > 0 ? (milesimos / milTotal) * 100 : 0;
 
@@ -977,39 +814,38 @@ main{
     $('pctOuro').textContent = pct.format(pOuro) + '%';
     $('pctMO').textContent   = pct.format(100 - pOuro) + '%';
 
-    $('unit').textContent     = brl.format(valorPeca);
-    $('lOuro').textContent    = brl.format(parcOuro);
-    $('lMO').textContent      = brl.format(parcMO);
-    $('total').textContent    = brl.format(totalPed);
-    $('qtdLabel').textContent = qtd + (qtd === 1 ? ' peça' : ' peças');
-    $('cotEcho').textContent  = brl.format(ouro) + ' /g';
+    $('lGrama').textContent  = brl.format(custoGrama);
+    $('lOuro').textContent   = brl.format(parcOuro);
+    $('lMO').textContent     = brl.format(parcMO);
+    $('total').textContent   = brl.format(valorPeca);
+    $('cotEcho').textContent = brl.format(ouro) + ' /g';
 
+    $('mbGrama').textContent = brl.format(custoGrama);
     $('mbPeca').textContent  = brl.format(valorPeca);
-    $('mbTotal').textContent = brl.format(totalPed);
 
-    /* posiciona cada slider na faixa que contém o valor atual */
-    Object.keys(ESCALAS).forEach(function(k){ aplicarFaixa(k, val(el[k])); });
-    $('milesimosR').value = milesimos;
-
-    syncChips(milesimos);
     try { localStorage.setItem(STORE, String(ouro)); } catch(e){}
 
-    estado = {peso:peso, milesimos:milesimos, mo:mo, ouro:ouro, qtd:qtd,
-              custoGrama:custoGrama, parcOuro:parcOuro, parcMO:parcMO,
-              valorPeca:valorPeca, total:totalPed};
+    estado = {peso:peso, milesimos:milesimos, mo:mo, ouro:ouro,
+              milTotal:milTotal, custoGrama:custoGrama,
+              parcOuro:parcOuro, parcMO:parcMO, valorPeca:valorPeca};
+
+    /* mudou o cálculo, é outro orçamento: o próximo envio emite novo número */
+    numeroAtual = null;
   }
 
   /* ---- copiar ---- */
   $('btnCopiar').addEventListener('click', function(){
     var btn = this, e = estado;
     var txt = [
-      'WRA folheados — Orçamento de banho','',
-      'Peça .............. ' + dec.format(e.peso) + ' g',
-      'Camada ............ ' + dec.format(e.milesimos) + ' milésimos + ' + dec.format(e.mo) + ' M.O.',
-      'Ouro .............. ' + brl.format(e.ouro) + ' /g','',
-      'Valor por peça .... ' + brl.format(e.valorPeca),
-      'Quantidade ........ ' + e.qtd,
-      'TOTAL ............. ' + brl.format(e.total)
+      'WRA folheados',
+      'Orçamento de banho nº ' + garantirNumero() + ', ' +
+        new Date().toLocaleDateString('pt-BR'), '',
+      'Peso: ' + dec.format(e.peso) + ' g',
+      'Camada de ouro: ' + dec.format(e.milesimos) + ' milésimos',
+      'Mão de obra: ' + dec.format(e.mo) + ' milésimos',
+      'Cotação do ouro: ' + brl.format(e.ouro) + '/g',
+      'Custo por grama: ' + brl.format(e.custoGrama), '',
+      'Valor do banho: ' + brl.format(e.valorPeca) + ' por peça'
     ].join('\n');
 
     function ok(){
@@ -1046,9 +882,17 @@ main{
 
   var numeroAtual = null;
 
+  /* O número é emitido uma vez por orçamento e reaproveitado entre WhatsApp e
+     impressão. Qualquer mudança no cálculo zera (ver calcular), porque aí
+     passa a ser outro orçamento. */
+  function garantirNumero(){
+    if (!numeroAtual) numeroAtual = proximoNumero();
+    return numeroAtual;
+  }
+
   function montarDocumento(){
     var e = estado;
-    if (!numeroAtual) numeroAtual = proximoNumero();
+    garantirNumero();
     $('docNum').textContent  = numeroAtual;
     $('docData').textContent = new Date().toLocaleDateString('pt-BR');
 
@@ -1070,16 +914,53 @@ main{
     $('docParcMO').textContent    = brl.format(e.parcMO);
     $('docValorPeca').textContent = brl.format(e.valorPeca);
 
-    $('docUnit').textContent  = brl.format(e.valorPeca);
-    $('docQtd').textContent   = e.qtd;
-    $('docTotal').textContent = brl.format(e.total);
+    $('docBase').textContent  = dec.format(e.peso) + ' g × ' +
+                                dec.format(e.milTotal) + ' milésimos';
+    $('docTotal').textContent = brl.format(e.valorPeca);
     $('docValidade').textContent = brl.format(e.ouro);
   }
 
   $('btnImprimir').addEventListener('click', function(){
-    numeroAtual = proximoNumero();
     montarDocumento();
     window.print();
+  });
+
+  /* ---- enviar no WhatsApp ----
+     Abre a conversa com a mensagem pronta. Quem aperta enviar é você:
+     o link só preenche o rascunho. */
+  function mensagemWhatsApp(){
+    var e = estado;
+    var cliente = $('cliente').value.trim();
+    var peca    = $('descricao').value.trim();
+    var linhas  = [];
+
+    linhas.push('*WRA folheados*');
+    linhas.push('Orçamento de banho nº ' + garantirNumero() + ', ' +
+                new Date().toLocaleDateString('pt-BR'));
+    linhas.push('');
+    if (cliente) linhas.push('*Cliente:* ' + cliente);
+    if (peca)    linhas.push('*Peça:* ' + peca);
+    if (cliente || peca) linhas.push('');
+
+    linhas.push('Peso: ' + dec.format(e.peso) + ' g');
+    linhas.push('Camada de ouro: ' + dec.format(e.milesimos) + ' milésimos');
+    linhas.push('Mão de obra: ' + dec.format(e.mo) + ' milésimos');
+    linhas.push('Milésimos totais: ' + dec.format(e.milTotal));
+    linhas.push('Cotação do ouro: ' + brl.format(e.ouro) + '/g');
+    linhas.push('Custo por grama: ' + brl.format(e.custoGrama));
+    linhas.push('');
+    linhas.push('*Valor do banho: ' + brl.format(e.valorPeca) + ' por peça*');
+    linhas.push('');
+    linhas.push('_Vale para o ouro a ' + brl.format(e.ouro) + ' o grama. ' +
+                'Se a cotação mudar, o valor muda junto._');
+
+    return linhas.join('\n');
+  }
+
+  $('btnZap').addEventListener('click', function(){
+    var url = 'https://wa.me/' + WHATSAPP + '?text=' +
+              encodeURIComponent(mensagemWhatsApp());
+    window.open(url, '_blank', 'noopener');
   });
   window.addEventListener('beforeprint', montarDocumento);
 
@@ -1091,69 +972,32 @@ main{
 
   campos.forEach(function(id){ el[id].addEventListener('input', calcular); });
 
-  /* As setas apenas correm a régua — quem seleciona é o clique no número.
-     Por isso ficam desativadas nas pontas da rolagem, não nas do valor.
-
-     A animação é feita à mão: `scrollBy({behavior:'smooth'})` é ignorado em
-     alguns contextos de renderização, e ali a seta simplesmente não faria
-     nada. O timer de segurança garante a chegada mesmo se o rAF for suspenso. */
-  var reguaRaf = null, reguaGuard = null, reguaGen = 0;
-
-  function rolarRegua(dir){
-    var passo = Math.max(60, Math.round(chips.clientWidth * 0.8));
-    var limite = chips.scrollWidth - chips.clientWidth;
-    var alvo = Math.max(0, Math.min(limite, chips.scrollLeft + dir * passo));
-    var gen = ++reguaGen;
-
-    cancelAnimationFrame(reguaRaf);
-    clearTimeout(reguaGuard);
-
-    function concluir(){
-      if (gen !== reguaGen) return;
-      chips.scrollLeft = alvo;
-      atualizarSetasRegua();
-    }
-    if (reduce || document.hidden){ concluir(); return; }
-
-    var ini = chips.scrollLeft, delta = alvo - ini, t0 = performance.now(), dur = 260;
-    reguaGuard = setTimeout(concluir, dur + 140);
-    reguaRaf = requestAnimationFrame(function tick(now){
-      if (gen !== reguaGen) return;
-      var p = Math.min(1, (now - t0) / dur);
-      chips.scrollLeft = ini + delta * (1 - Math.pow(1 - p, 3));
-      if (p < 1) reguaRaf = requestAnimationFrame(tick);
-      else concluir();
+  /* Clicar no número seleciona tudo, para digitar já substituir o valor.
+     O setTimeout é necessário porque o mousedown desfaz um select() feito
+     de dentro do próprio evento de foco. */
+  campos.forEach(function(id){
+    el[id].addEventListener('focus', function(){
+      var campo = this;
+      setTimeout(function(){ campo.select(); }, 0);
     });
-  }
-  $('milMenos').addEventListener('click', function(){ rolarRegua(-1); });
-  $('milMais').addEventListener('click',  function(){ rolarRegua(1);  });
-  chips.addEventListener('scroll', atualizarSetasRegua);
+  });
 
-  /* Normaliza a camada só ao sair do campo — corrigir durante a digitação
-     atrapalharia quem está digitando "18" e vê o "1" virar "2". */
+  /* Normaliza a camada só ao sair do campo. Corrigir durante a digitação
+     atrapalha quem digita "18" e vê o "1" virar "2" no meio do caminho. */
   el.milesimos.addEventListener('change', function(){
     this.value = milesimosValidos();
     calcular();
   });
-  Object.keys(pares).forEach(function(k){
-    $(pares[k]).addEventListener('input', function(){
-      el[k].value = this.value;
-      calcular();
-    });
-  });
-
-  /* setas de faixa: levam o valor ao início da faixa vizinha */
-  document.querySelectorAll('.scale__nav').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      var campo = btn.getAttribute('data-scale');
-      var cfg   = ESCALAS[campo];
-      var idx   = Math.max(0, bandaAtual[campo] + parseInt(btn.getAttribute('data-dir'), 10));
-      el[campo].value = Math.max(cfg.piso, idx * cfg.banda);
-      calcular();
-    });
-  });
-
   calcular();
+
+  /* A largura da cotação é medida no texto, então precisa ser refeita quando
+     a fonte web termina de carregar. Até lá a medição usa a fonte de
+     reserva, mais estreita, e o número sairia cortado. O mesmo vale ao
+     cruzar o ponto de quebra de 620px, onde o corpo da fonte muda. */
+  if (document.fonts && document.fonts.ready){
+    document.fonts.ready.then(ajustarCotacao);
+  }
+  window.addEventListener('resize', ajustarCotacao);
 })();
 </script>
 </body>
