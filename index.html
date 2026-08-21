@@ -3,587 +3,343 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>WRA folheados · Calculadora de Banhos</title>
+<title>WRA Folheados · Calculadora de Banhos</title>
 <link rel="icon" href="mark-bistre.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,500;0,6..96,600&family=Inter:wght@300..600&display=swap" rel="stylesheet">
 <style>
 /* ==========================================================================
-   WRA folheados — Calculadora de Banhos
-   Ecru #D5BE79 · Champagne #EAD89B · Bistre #25130A · Cultured #F6F3F3
+   WRA Folheados · Calculadora de Banhos (ferramenta interna)
+
+   Mesmo sistema visual do site: fundo Cultured, texto Bistre, ouro só como
+   preenchimento e destaque. Assim quem passa de um para o outro reconhece
+   a mesma casa.
+
+   Três lições que valem aqui e vieram do site:
+     · ouro claro não serve de cor de texto sobre fundo claro. O tom de
+       leitura é #82672A, que dá 4,85:1 sobre o Cultured;
+     · o logotipo em fundo claro é a versão Bistre do manual;
+     · a Bodoni precisa do eixo óptico preso, senão vira fio de cabelo.
    ========================================================================== */
 
 :root{
-  --ecru:#D5BE79;
-  --champagne:#EAD89B;
-  --bistre:#25130A;
+  --ecru:#D5BE7A;
+  --champagne:#EBD89C;
+  --bistre:#25140A;
   --cultured:#F6F3F3;
+  --ouro-tinta:#82672A;
 
-  /* canvas escuro derivado do Bistre */
-  --void:#120903;
-  --deep:#1A0D05;
-  --surface:rgba(255,255,255,.035);
-  --surface-2:rgba(255,255,255,.055);
-  --edge:rgba(213,190,121,.14);
-  --edge-2:rgba(213,190,121,.28);
+  --tinta:#25140A;
+  --tinta-70:rgba(37,20,10,.70);
+  --tinta-46:rgba(37,20,10,.46);
+  --tinta-26:rgba(37,20,10,.26);
+  --fio:rgba(37,20,10,.13);
+  --fio-fraco:rgba(37,20,10,.07);
+  --creme-74:rgba(246,243,243,.74);
+  --creme-42:rgba(246,243,243,.42);
+  --papel:#FBFAF8;
 
-  --cream:#F2EDE4;
-  --cream-60:rgba(242,237,228,.60);
-  --cream-38:rgba(242,237,228,.38);
-
-  /* tokens claros, usados pelo orçamento impresso */
-  --ink:#25130A;
-  --ink-70:#5c4838;
-  --ink-45:#8b7a6c;
-  --hair:#E7E0D4;
-
-  --display:"Bodoni Moda",Didot,"Bodoni MT","Times New Roman",serif;
+  --display:"Awesome Serif","Bodoni Moda",Didot,"Bodoni MT","Times New Roman",serif;
   --sans:"Helvetica Neue",Inter,Helvetica,Arial,sans-serif;
 
-  --r:18px;
-  --ring:0 0 0 4px rgba(213,190,121,.22);
+  --e:cubic-bezier(.23,1,.32,1);
+  --anel:0 0 0 3px rgba(138,110,44,.5);
+  --gut:clamp(18px,4vw,52px);
 }
 
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
-
-/* nenhum campo numérico usa as setinhas do navegador */
 input[type=number]::-webkit-outer-spin-button,
 input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 input[type=number]{-moz-appearance:textfield;appearance:textfield}
+
 body{
-  margin:0;
-  min-height:100vh;
-  background:var(--void);
-  background-image:
-    radial-gradient(120% 80% at 50% -10%, rgba(213,190,121,.20) 0%, rgba(213,190,121,0) 55%),
-    radial-gradient(90% 60% at 100% 0%, rgba(234,216,155,.07) 0%, transparent 50%),
-    linear-gradient(180deg, var(--deep) 0%, var(--void) 60%);
-  background-attachment:fixed;
-  color:var(--cream);
-  font-family:var(--sans);
-  font-size:15px;
-  line-height:1.5;
-  -webkit-font-smoothing:antialiased;
-  -moz-osx-font-smoothing:grayscale;
+  margin:0;background:var(--cultured);color:var(--tinta);
+  font-family:var(--sans);font-size:15px;line-height:1.55;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+}
+::selection{background:var(--ecru);color:var(--bistre)}
+:where(a,button,input):focus-visible{outline:none;box-shadow:var(--anel)}
+img{max-width:100%;height:auto;display:block}
+
+/* a Bodoni com eixo óptico preso, para as hastes não afinarem no display */
+.serif{font-family:var(--display);font-variation-settings:'opsz' 24,'wght' 500;
+       font-optical-sizing:none;font-weight:500}
+
+.rotulo{
+  font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;
+  font-weight:600;color:var(--ouro-tinta);margin:0;
 }
 
-/* granulado sutil sobre todo o fundo */
-.grain{
-  position:fixed;inset:0;z-index:0;pointer-events:none;
-  opacity:.05;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+/* =============================== BARRA ================================== */
+.barra{
+  display:flex;align-items:center;gap:20px;
+  padding:14px var(--gut);
+  background:var(--cultured);border-bottom:1px solid var(--fio);
 }
+.barra img{height:23px;width:auto;margin-right:auto}
+.barra span{
+  font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--tinta-46);white-space:nowrap;
+}
+@media (max-width:620px){.barra span{display:none}}
 
-.eyebrow{
-  font-size:10px;letter-spacing:.3em;text-transform:uppercase;
-  font-weight:500;color:var(--cream-38);
-}
-.num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
-
-/* =============================  TOPO  =================================== */
-.topbar{
-  position:sticky;top:0;z-index:30;
-  display:flex;align-items:center;justify-content:space-between;gap:24px;
-  padding:18px clamp(20px,4vw,56px);
-  background:rgba(18,9,3,.72);
-  backdrop-filter:blur(14px) saturate(130%);
-  -webkit-backdrop-filter:blur(14px) saturate(130%);
-  border-bottom:1px solid rgba(213,190,121,.1);
-}
-.brand{display:flex;align-items:center;min-width:0}
-.brand img{
-  height:32px;width:auto;display:block;
-  max-width:min(52vw,240px);object-fit:contain;object-position:left center;
-}
-
-/* cotação do ouro: fica no topo por ser dado de mercado, não da peça */
-.quote{
-  display:flex;align-items:center;gap:10px;
-  padding:7px 15px;
-  background:var(--surface);
-  border:1px solid var(--edge);
-  border-radius:100px;
-  transition:border-color .2s ease, background .2s ease;
-}
-.quote:focus-within{border-color:var(--edge-2);background:var(--surface-2)}
-.quote__lbl{font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--cream-38);white-space:nowrap}
-.quote__in{display:flex;align-items:baseline;gap:4px;color:var(--ecru)}
-.quote__in span{font-size:13px;opacity:.7}
-.quote__in input{
-  /* a largura é medida e aplicada por JS conforme o número digitado */
-  width:38px;
-  background:transparent;border:none;outline:none;padding:0;
-  font-family:var(--sans);font-size:19px;font-weight:500;
-  font-variant-numeric:tabular-nums;color:var(--ecru);
-  text-align:left;
-  /* mesma caixa de campo dos tiles, em escala menor */
-  padding:3px 9px;
-  background:rgba(0,0,0,.3);
-  border:1px solid var(--edge);
-  border-radius:8px;
-  cursor:text;
-  transition:border-color .18s ease, background .18s ease, box-shadow .18s ease;
-}
-.quote__in input:hover{background:rgba(0,0,0,.4);border-color:rgba(213,190,121,.34)}
-.quote__in input:focus{border-color:var(--ecru);box-shadow:var(--ring)}
-
-/* Onde houver suporte, o próprio navegador dimensiona o campo pelo conteúdo.
-   É imune a erro de medição e à fonte que carregar. O JS mede só como
-   reserva, para navegadores sem `field-sizing`. */
-@supports (field-sizing:content){
-  .quote__in input{field-sizing:content;width:auto;min-width:2ch}
-}
-@media (max-width:620px){
-  .topbar{padding:14px 18px;gap:12px}
-  .brand img{height:24px}
-  .quote{padding:6px 12px;gap:8px}
-  .quote__lbl{display:none}
-  .quote__in input{font-size:17px}
-}
-
-/* =============================  SHELL  ================================== */
-main{
-  position:relative;z-index:1;
+/* =============================== MESA =================================== */
+.mesa{
+  display:grid;grid-template-columns:minmax(0,1fr) 400px;
+  gap:clamp(18px,3vw,38px);
   max-width:1180px;margin:0 auto;
-  padding:clamp(40px,7vw,86px) clamp(20px,4vw,56px) 120px;
-}
-
-/* ==============================  HERO  ================================== */
-.hero{text-align:center;margin-bottom:clamp(40px,6vw,72px)}
-.hero__value{
-  font-family:var(--display);
-  font-weight:400;
-  font-size:clamp(3.6rem,14vw,8.5rem);
-  line-height:.94;
-  letter-spacing:-.03em;
-  margin:18px 0 0;
-  font-variant-numeric:tabular-nums;
-  background:linear-gradient(174deg,#FBF1D6 0%,var(--champagne) 32%,var(--ecru) 62%,#A98847 100%);
-  -webkit-background-clip:text;background-clip:text;
-  color:transparent;
-  -webkit-text-fill-color:transparent;
-}
-.hero__meta{
-  display:flex;align-items:center;justify-content:center;
-  flex-wrap:wrap;gap:0 20px;
-  margin-top:26px;
-  font-size:13.5px;color:var(--cream-60);
-}
-.hero__meta b{color:var(--cream);font-weight:500;font-variant-numeric:tabular-nums}
-.hero__meta i{width:3px;height:3px;border-radius:50%;background:var(--edge-2);display:block}
-@media (max-width:560px){
-  .hero__meta{gap:6px 14px;font-size:12.5px}
-  .hero__meta i{display:none}
-}
-
-/* barra de composição */
-.bar{
-  max-width:520px;margin:30px auto 0;
-}
-.bar__track{
-  display:flex;height:3px;border-radius:100px;overflow:hidden;
-  background:rgba(213,190,121,.12);
-}
-.bar__seg{height:100%;transition:width .42s cubic-bezier(.22,.61,.36,1)}
-.bar__seg--ouro{background:linear-gradient(90deg,var(--champagne),var(--ecru))}
-.bar__seg--mo{background:rgba(213,190,121,.34)}
-.bar__key{
-  display:flex;justify-content:space-between;
-  margin-top:10px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;
-  color:var(--cream-38);
-}
-.bar__key b{color:var(--cream-60);font-weight:500}
-
-/* ==============================  TILES  ================================= */
-.tiles{
-  display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:14px;
-  /* altura natural por tile: mantém os sliders na mesma linha mesmo com o
-     teclado de milésimos alongando o tile da camada */
+  padding:clamp(24px,4vw,48px) var(--gut) 90px;
   align-items:start;
 }
-@media (max-width:900px){.tiles{grid-template-columns:repeat(2,1fr)}}
-@media (max-width:480px){.tiles{grid-template-columns:1fr}}
+@media (max-width:940px){.mesa{grid-template-columns:1fr}}
 
-.tile{
-  display:flex;flex-direction:column;min-width:0;
-  padding:22px;
-  background:var(--surface);
-  border:1px solid var(--edge);
-  border-radius:var(--r);
-  transition:border-color .22s ease, background .22s ease, transform .22s ease;
-}
-.tile:hover{background:var(--surface-2);border-color:rgba(213,190,121,.22)}
-.tile:focus-within{border-color:var(--edge-2);background:var(--surface-2)}
-
-.tile__top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:2px}
-.tile__label{
-  display:inline-flex;align-items:center;gap:7px;
-  font-size:10px;letter-spacing:.24em;text-transform:uppercase;
-  color:var(--cream-38);white-space:nowrap;
-}
-.tile__unit{font-size:11.5px;color:var(--cream-38);white-space:nowrap}
-
-.tile__value{
-  width:100%;
-  background:transparent;border:none;outline:none;padding:0;
-  font-family:var(--display);
-  font-size:clamp(2.1rem,4vw,2.75rem);
-  /* height explícita: sem ela, a div do valor travado e os inputs divergem
-     2px. O +18px cobre 8px de respiro em cima e embaixo mais as bordas. */
-  font-weight:400;line-height:1.15;height:calc(1.15em + 18px);
-  letter-spacing:-.02em;
-  color:var(--cream);
-  font-variant-numeric:tabular-nums;
-  /* caixa de campo: é o formato que sinaliza "digite aqui" */
-  padding:8px 12px;
-  background:rgba(0,0,0,.26);
-  border:1px solid var(--edge);
-  border-radius:10px;
-  cursor:text;
-  transition:color .18s ease, border-color .18s ease, background .18s ease, box-shadow .18s ease;
-}
-.tile__value:hover{background:rgba(0,0,0,.34);border-color:rgba(213,190,121,.34)}
-.tile__value:focus{
-  color:var(--ecru);
-  background:rgba(0,0,0,.4);
-  border-color:var(--ecru);
-  box-shadow:var(--ring);
-}
-.tile__value::-webkit-outer-spin-button,
-.tile__value::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-.tile__value{-moz-appearance:textfield;appearance:textfield}
-.tile__value:focus{color:var(--ecru)}
-
-/* ===========================  CONDIÇÃO  ================================
-   A mão de obra não é um número solto: são duas condições de pagamento
-   definidas pela empresa. O seletor deixa a regra explícita e evita que
-   alguém digite o valor errado. */
-.condicao{
-  margin-top:14px;padding:20px 22px;
-  background:var(--surface);
-  border:1px solid var(--edge);
-  border-radius:var(--r);
-}
-.condicao__k{
-  font-size:10px;letter-spacing:.24em;text-transform:uppercase;
-  color:var(--cream-38);margin-bottom:14px;
-}
-.condicao__op{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-@media (max-width:520px){.condicao__op{grid-template-columns:1fr}}
-.opt{
-  display:flex;flex-direction:column;align-items:flex-start;gap:4px;
-  padding:14px 16px;text-align:left;
-  background:rgba(0,0,0,.26);
-  border:1px solid var(--edge);
-  border-radius:12px;
-  color:var(--cream-60);
-  font-family:var(--sans);cursor:pointer;
-  transition:background .16s ease, border-color .16s ease, color .16s ease;
-}
-.opt:hover{background:rgba(0,0,0,.34);border-color:rgba(213,190,121,.34)}
-.opt:focus-visible{outline:none;box-shadow:var(--ring);border-color:var(--ecru)}
-.opt__t{font-size:14px;font-weight:500}
-.opt__d{font-size:11.5px;color:var(--cream-38);font-variant-numeric:tabular-nums}
-.opt[aria-pressed="true"]{
-  background:rgba(213,190,121,.13);
-  border-color:var(--ecru);
-  color:var(--cream);
-}
-.opt[aria-pressed="true"] .opt__d{color:var(--champagne)}
-.condicao__n{margin:14px 0 0;font-size:11.5px;color:var(--cream-38);line-height:1.45}
-
-/* =============================  LEDGER  ================================= */
-.ledger{
-  display:grid;grid-template-columns:1fr 1fr;gap:14px;
-  margin-top:14px;
-}
-@media (max-width:900px){.ledger{grid-template-columns:1fr}}
-/* No HTML os dados vêm primeiro, para no celular a ordem visual bater com a
-   de leitura e navegação: preenche os dados e termina nos botões. No desktop
-   o fechamento volta para a coluna da esquerda. */
-@media (min-width:901px){.card--fechamento{order:-1}}
-
-.card{
-  padding:26px;
-  background:var(--surface);
-  border:1px solid var(--edge);
-  border-radius:var(--r);
-}
-.card__title{
-  font-size:10px;letter-spacing:.28em;text-transform:uppercase;
-  color:var(--cream-38);margin:0 0 18px;font-weight:500;
+.bloco{border:1px solid var(--fio);background:var(--papel);padding:clamp(20px,2.6vw,30px)}
+.bloco + .bloco{border-top:none}
+.bloco__k{
+  font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;
+  color:var(--tinta-46);margin:0 0 18px;font-weight:600;
 }
 
-.line{
-  display:flex;align-items:baseline;justify-content:space-between;gap:16px;
-  padding:11px 0;
-  border-bottom:1px solid rgba(213,190,121,.08);
-}
-.line:last-of-type{border-bottom:none}
-.line__k{font-size:13.5px;color:var(--cream-60)}
-.line__k small{display:block;font-size:11px;color:var(--cream-38);margin-top:2px}
-.line__v{font-size:14.5px;font-weight:500;color:var(--cream);font-variant-numeric:tabular-nums;white-space:nowrap}
+/* ------------------------------ campos --------------------------------- */
+.dupla{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:520px){.dupla{grid-template-columns:1fr}}
 
-/* bloco do total */
-.grand{
-  display:flex;align-items:flex-end;justify-content:space-between;gap:16px;
-  margin-top:20px;padding-top:20px;
-  border-top:1px solid var(--edge-2);
+.campo label{
+  display:block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  font-weight:600;color:var(--tinta-46);margin-bottom:8px;
 }
-.grand__k{font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--champagne)}
-.grand__k small{
-  display:block;margin-top:5px;font-size:12px;letter-spacing:.02em;
-  text-transform:none;color:var(--cream-38);
+.campo__cx{position:relative;display:flex;align-items:center}
+.campo__cx input{
+  width:100%;height:56px;padding:0 56px 0 15px;
+  font:500 24px/1 var(--sans);font-variant-numeric:tabular-nums;color:var(--tinta);
+  background:#fff;border:1px solid var(--fio);outline:none;
+  transition:border-color .16s var(--e);
 }
-.grand__v{
-  font-family:var(--display);font-size:2.4rem;line-height:1;
-  color:var(--ecru);font-variant-numeric:tabular-nums;white-space:nowrap;
+.campo__cx input:hover{border-color:var(--tinta-26)}
+.campo__cx input:focus{border-color:var(--ouro-tinta)}
+.campo__cx u{
+  position:absolute;right:15px;text-decoration:none;
+  font-size:11.5px;color:var(--tinta-46);pointer-events:none;text-align:right;
+  max-width:44px;line-height:1.15;
 }
+.campo__dica{margin:7px 0 0;font-size:11.5px;color:var(--tinta-46)}
 
-/* campos de texto do orçamento */
+/* ------------------------ condição de pagamento ------------------------ */
+.cond{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:520px){.cond{grid-template-columns:1fr}}
+.cond button{
+  padding:14px 15px;text-align:left;cursor:pointer;font-family:var(--sans);
+  background:#fff;border:1px solid var(--fio);color:var(--tinta-46);
+  transition:border-color .16s var(--e), background .16s var(--e), color .16s var(--e);
+}
+.cond button b{display:block;font-size:13.5px;font-weight:600;color:var(--tinta);margin-bottom:2px}
+.cond button span{font-size:11.5px;font-variant-numeric:tabular-nums}
+.cond button:hover{border-color:var(--tinta-26)}
+.cond button[aria-pressed="true"]{background:var(--bistre);border-color:var(--bistre);color:var(--creme-42)}
+.cond button[aria-pressed="true"] b{color:var(--cultured)}
+.cond__n{margin:14px 0 0;font-size:11.5px;color:var(--tinta-46);line-height:1.5}
+
+/* ------------------------------ resultado ------------------------------ */
+.painel{position:sticky;top:20px}
+@media (max-width:940px){.painel{position:static}}
+
+.saida{background:var(--bistre);color:var(--cultured);padding:clamp(22px,2.8vw,30px)}
+.saida .rotulo{color:var(--ecru)}
+.saida__v{
+  font-size:clamp(2.4rem,5vw,3.2rem);line-height:1.04;color:var(--ecru);
+  margin:12px 0 0;font-variant-numeric:tabular-nums;letter-spacing:-.02em;
+}
+.saida__u{font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;
+          color:var(--creme-42);margin:8px 0 0}
+
+.fita{display:flex;height:2px;margin-top:22px;background:rgba(213,190,122,.16)}
+.fita i{height:100%;transition:width .4s var(--e)}
+.fita__o{background:var(--ecru)}
+.fita__m{background:rgba(213,190,122,.4)}
+.fita__k{display:flex;justify-content:space-between;margin-top:9px;
+         font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--creme-42)}
+.fita__k b{color:var(--creme-74);font-weight:500}
+
+.ln{display:flex;align-items:baseline;justify-content:space-between;gap:14px;
+    padding:11px 0;border-bottom:1px solid rgba(213,190,122,.12)}
+.ln:last-of-type{border-bottom:none}
+.ln__k{font-size:13px;color:var(--creme-74)}
+.ln__k small{display:block;font-size:10.5px;color:var(--creme-42);margin-top:2px}
+.ln__v{font-size:14px;font-weight:500;color:var(--cultured);
+       font-variant-numeric:tabular-nums;white-space:nowrap}
+.linhas{margin-top:20px;padding-top:6px;border-top:1px solid rgba(213,190,122,.2)}
+
+/* ------------------------------- ações --------------------------------- */
+.acoes{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.bt{
+  flex:1 1 128px;height:46px;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  font:600 11px var(--sans);letter-spacing:.14em;text-transform:uppercase;
+  cursor:pointer;white-space:nowrap;border:1px solid transparent;
+  transition:transform .14s var(--e), background .16s var(--e),
+             color .16s var(--e), border-color .16s var(--e);
+}
+.bt:active{transform:scale(.975)}
+.bt--ouro{flex-basis:100%;background:var(--ecru);border-color:var(--ecru);color:var(--bistre)}
+.bt--ouro:hover{background:var(--champagne);border-color:var(--champagne)}
+.bt--linha{background:transparent;border-color:rgba(213,190,122,.4);color:var(--champagne)}
+.bt--linha:hover{background:rgba(213,190,122,.12);border-color:var(--ecru);color:var(--cultured)}
+.bt svg{width:14px;height:14px;fill:currentColor;flex:none}
+
+/* --------------------------- campos de texto --------------------------- */
 .txt{margin-bottom:14px}
 .txt:last-of-type{margin-bottom:0}
-.txt label{display:block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--cream-38);margin-bottom:7px}
+.txt label{display:block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+           font-weight:600;color:var(--tinta-46);margin-bottom:8px}
 .txt input{
-  width:100%;height:44px;padding:0 14px;
-  background:rgba(0,0,0,.22);
-  border:1px solid var(--edge);
-  border-radius:10px;
-  font-family:var(--sans);font-size:14.5px;color:var(--cream);
-  outline:none;transition:border-color .18s ease, background .18s ease;
+  width:100%;height:46px;padding:0 14px;
+  font:400 14.5px var(--sans);color:var(--tinta);
+  background:#fff;border:1px solid var(--fio);outline:none;
+  transition:border-color .16s var(--e);
 }
-.txt input::placeholder{color:rgba(242,237,228,.25)}
-.txt input:focus{border-color:var(--edge-2);background:rgba(0,0,0,.3)}
+.txt input::placeholder{color:var(--tinta-26)}
+.txt input:focus{border-color:var(--ouro-tinta)}
 
-/* ações ------------------------------------------------------------------ */
-.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
-.btn{
-  flex:1 1 150px;height:46px;
-  display:inline-flex;align-items:center;justify-content:center;
-  font-family:var(--sans);font-size:11.5px;font-weight:600;
-  letter-spacing:.14em;text-transform:uppercase;
-  border-radius:100px;cursor:pointer;white-space:nowrap;
-  transition:all .18s ease;
-}
-.btn--gold{
-  background:linear-gradient(180deg,var(--champagne),var(--ecru));
-  border:1px solid var(--ecru);color:var(--bistre);
-}
-.btn--gold:hover{filter:brightness(1.08);transform:translateY(-1px)}
-.btn--line{background:transparent;border:1px solid var(--edge-2);color:var(--champagne)}
-.btn--line:hover{background:rgba(213,190,121,.09);border-color:var(--ecru)}
-.btn:focus-visible{outline:none;box-shadow:var(--ring)}
-.btn--wide{flex:1 1 100%}
-.btn__ic{width:15px;height:15px;fill:currentColor;flex:none;margin-right:9px}
-
-/* ===========================  RODAPÉ  =================================== */
 .formula{
-  margin-top:34px;padding-top:26px;
-  border-top:1px solid rgba(213,190,121,.1);
-  display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 18px;
-  font-size:12.5px;color:var(--cream-38);
+  margin:20px 0 0;padding-top:16px;border-top:1px solid var(--fio-fraco);
+  font-size:11.5px;color:var(--tinta-46);line-height:1.55;
 }
-.formula code{
-  font-family:ui-monospace,Consolas,"SF Mono",Menlo,monospace;
-  font-size:12.5px;color:var(--champagne);
-}
+.formula code{font-family:ui-monospace,Consolas,monospace;color:var(--ouro-tinta)}
 
-/* =====================  BARRA FIXA (mobile)  ============================ */
-.mobilebar{
-  position:fixed;left:0;right:0;bottom:0;z-index:40;
-  display:none;align-items:center;justify-content:space-between;gap:16px;
-  padding:12px 18px;
-  padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));
-  background:rgba(18,9,3,.9);
-  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
-  border-top:1px solid var(--edge-2);
-}
-.mobilebar .k{font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:var(--cream-38)}
-.mobilebar .v{font-family:var(--display);font-size:1.4rem;color:var(--ecru);line-height:1.15;font-variant-numeric:tabular-nums}
-.mobilebar .v small{font-family:var(--sans);font-size:11px;color:var(--cream-38)}
-@media (max-width:900px){.mobilebar{display:flex}}
-
-@media (prefers-reduced-motion:reduce){
-  *{transition-duration:.01ms !important;animation-duration:.01ms !important}
-}
-
-/* =====================  DOCUMENTO DE ORÇAMENTO  =========================
-   Só existe no papel / PDF. */
+/* ========================= ORÇAMENTO (impressão) ======================== */
 .doc{display:none}
-
 @media print{
   @page{size:A4;margin:14mm 15mm}
+  html,body{background:#fff !important;color:var(--tinta)}
+  body > *:not(.doc){display:none !important}
 
-  html,body{background:#fff !important;background-image:none !important;color:var(--ink)}
-  .topbar,main,.mobilebar,.grain{display:none !important}
+  .doc{display:block;font-family:var(--sans);font-size:10.5pt;line-height:1.45;
+       -webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .doc__topo{display:flex;align-items:flex-end;gap:14px;
+             padding-bottom:10px;border-bottom:2px solid var(--ecru)}
+  .doc__topo img{width:44px;height:auto;flex:none}
+  .doc__nome{font-family:var(--display);font-size:21pt;letter-spacing:.02em;line-height:1}
+  .doc__tag{font-size:7pt;letter-spacing:.32em;text-transform:uppercase;
+            color:var(--tinta-70);margin-top:4px}
+  .doc__meta{margin-left:auto;text-align:right;font-size:8.5pt;line-height:1.6}
+  .doc__meta span{font-size:7pt;letter-spacing:.16em;text-transform:uppercase;color:var(--tinta-46)}
+  .doc__meta b{font-variant-numeric:tabular-nums;margin-left:9px}
 
-  .doc{
-    display:block;color:var(--ink);font-family:var(--sans);
-    font-size:10.5pt;line-height:1.45;
-    -webkit-print-color-adjust:exact;print-color-adjust:exact;
-  }
+  .doc h1{font-family:var(--display);font-weight:500;font-size:19pt;margin:20px 0 0}
+  .doc__cli{display:flex;gap:10px;align-items:baseline;margin-top:6px;font-size:10pt}
+  .doc__cli span{font-size:7pt;letter-spacing:.2em;text-transform:uppercase;color:var(--tinta-46)}
 
-  .doc__head{
-    display:flex;align-items:flex-end;gap:14px;
-    padding-bottom:10px;border-bottom:2px solid var(--ecru);
-  }
-  .doc__head img{width:44px;height:auto;flex:none}
-  .doc__brand{flex:1;line-height:1.1}
-  .doc__name{font-family:var(--display);font-size:21pt;letter-spacing:.02em}
-  .doc__tag{font-size:7pt;letter-spacing:.34em;text-transform:uppercase;color:var(--ink-70);margin-top:3px}
-  .doc__meta{text-align:right;font-size:8.5pt;line-height:1.5}
-  .doc__meta div{display:flex;gap:10px;justify-content:flex-end}
-  .doc__meta span{color:var(--ink-45);text-transform:uppercase;letter-spacing:.14em;font-size:7pt}
-  .doc__meta b{font-weight:500;font-variant-numeric:tabular-nums;min-width:76px;text-align:right}
+  .doc__grade{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:22px}
+  .doc__grade h2{font-size:7pt;letter-spacing:.22em;text-transform:uppercase;color:var(--tinta-46);
+                 font-weight:600;margin:0 0 8px;padding-bottom:6px;border-bottom:1px solid var(--fio)}
+  .doc__grade table{width:100%;border-collapse:collapse}
+  .doc__grade td{padding:6px 0;font-size:9.5pt;border-bottom:1px solid #F1ECE3}
+  .doc__grade tr:last-child td{border-bottom:none}
+  .doc__grade td:first-child{color:var(--tinta-70)}
+  .doc__grade td:last-child{text-align:right;font-weight:500;
+                            font-variant-numeric:tabular-nums;white-space:nowrap}
+  .doc__grade tr.em td{font-weight:600}
 
-  .doc__title{font-family:var(--display);font-weight:400;font-size:19pt;margin:20px 0 0;letter-spacing:-.005em}
-  .doc__client{display:flex;gap:10px;align-items:baseline;margin-top:6px;font-size:10pt}
-  .doc__client span{font-size:7pt;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-45)}
-  .doc__client b{font-weight:500}
+  .doc__soma{display:flex;margin-top:22px;border:1px solid var(--ecru)}
+  .doc__cel{padding:13px 16px;display:flex;flex-direction:column;justify-content:center}
+  .doc__cel span{font-size:7pt;letter-spacing:.18em;text-transform:uppercase;
+                 color:var(--tinta-46);margin-bottom:4px}
+  .doc__cel b{font-variant-numeric:tabular-nums;font-size:11pt}
+  .doc__base{flex:1;border-right:1px solid #EFE6D2}
+  .doc__val{width:46%;background:#FBF5E7;text-align:right;align-items:flex-end}
+  .doc__val b{font-family:var(--display);font-size:21pt;line-height:1.05}
 
-  .doc__grid{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:20px}
-  .doc__block h2{
-    font-size:7pt;letter-spacing:.24em;text-transform:uppercase;
-    color:var(--ink-45);font-weight:500;margin:0 0 8px;padding-bottom:6px;
-    border-bottom:1px solid var(--hair);
-  }
-  .doc__block table{width:100%;border-collapse:collapse}
-  .doc__block td{padding:5.5px 0;font-size:9.5pt;border-bottom:1px solid #F1ECE3;vertical-align:baseline}
-  .doc__block tr:last-child td{border-bottom:none}
-  .doc__block td:first-child{color:var(--ink-70)}
-  .doc__block td:last-child{text-align:right;font-weight:500;font-variant-numeric:tabular-nums;white-space:nowrap}
-  .doc__block tr.em td{font-weight:600}
+  .doc__nota{margin-top:18px;font-size:8.5pt;color:var(--tinta-70);line-height:1.5}
+  .doc__nota p{margin:0 0 5px;padding-left:12px;border-left:1px solid var(--fio)}
+  .doc__nota b{color:var(--tinta)}
+  .doc__nota code{font-family:Consolas,monospace;font-size:8.5pt}
 
-  .doc__total{display:flex;align-items:stretch;margin-top:22px;border:1px solid var(--ecru)}
-  .doc__cell{padding:12px 16px;display:flex;flex-direction:column;justify-content:center}
-  .doc__cell span{font-size:7pt;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-45);margin-bottom:4px}
-  .doc__cell b{font-weight:500;font-variant-numeric:tabular-nums;font-size:11pt}
-  .doc__cell--unit{flex:1;border-right:1px solid #EFE6D2}
-  .doc__cell--qty{width:88px;border-right:1px solid #EFE6D2;text-align:center;align-items:center}
-  .doc__cell--grand{width:44%;background:#FBF5E7;text-align:right;align-items:flex-end}
-  .doc__cell--grand span{color:var(--ink-70)}
-  .doc__cell--grand b{font-family:var(--display);font-size:21pt;line-height:1.05}
-
-  .doc__note{margin-top:18px;font-size:8.5pt;color:var(--ink-70);line-height:1.5}
-  .doc__note p{margin:0 0 5px;padding-left:12px;border-left:1px solid var(--hair)}
-  .doc__note b{color:var(--ink);font-weight:600}
-  .doc__note code{font-family:Consolas,"SF Mono",Menlo,monospace;font-size:8.5pt}
-
-  .doc__foot{display:flex;gap:40px;margin-top:34px}
-  .doc__sign{
-    flex:1;padding-top:6px;border-top:1px solid var(--ink-45);
-    font-size:7.5pt;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-45);text-align:center;
-  }
-  .doc__legal{
-    margin-top:16px;padding-top:8px;border-top:1px solid var(--hair);
-    font-size:7pt;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-45);text-align:center;
-  }
+  .doc__pe{display:flex;gap:40px;margin-top:34px}
+  .doc__ass{flex:1;padding-top:6px;border-top:1px solid var(--tinta-46);
+            font-size:7.5pt;letter-spacing:.14em;text-transform:uppercase;
+            color:var(--tinta-46);text-align:center}
+  .doc__legal{margin-top:16px;padding-top:8px;border-top:1px solid var(--fio);
+              font-size:7pt;letter-spacing:.16em;text-transform:uppercase;
+              color:var(--tinta-46);text-align:center}
 }
+
+@media (prefers-reduced-motion:reduce){*{transition:none !important}}
 </style>
 </head>
 <body>
 
-<div class="grain" aria-hidden="true"></div>
-
-<header class="topbar">
-  <div class="brand">
-    <img src="logo-wordmark.png" alt="WRA folheados">
-  </div>
-  <div class="quote">
-    <span class="quote__lbl">Ouro hoje</span>
-    <label class="quote__in">
-      <span>R$</span>
-      <input type="number" id="ouro" value="650" step="10" min="0" inputmode="decimal" aria-label="Preço do grama de ouro">
-      <span>/g</span>
-    </label>
-  </div>
+<header class="barra">
+  <img src="logo-wordmark-bistre.png" alt="WRA Folheados">
+  <span>Calculadora de banhos · uso interno</span>
 </header>
 
-<main>
+<main class="mesa">
 
-  <!-- ============================ HERO ============================ -->
-  <section class="hero">
-    <span class="eyebrow">Valor do banho por peça</span>
-    <div class="hero__value num" id="valorPeca" aria-live="polite">R$ 10,46</div>
-
-    <div class="hero__meta">
-      <span><b id="custoGrama">R$ 2,99</b> por grama</span>
-      <i></i>
-      <span><b id="milTotal">4,6</b> milésimos totais</span>
-      <i></i>
-      <span><b id="parcOuro">R$ 6,83</b> em ouro</span>
-      <i></i>
-      <span><b id="parcMO">R$ 3,64</b> em mão de obra</span>
-    </div>
-
-    <div class="bar">
-      <div class="bar__track" role="img" aria-label="Composição entre ouro e mão de obra">
-        <div class="bar__seg bar__seg--ouro" id="segOuro" style="width:65%"></div>
-        <div class="bar__seg bar__seg--mo"   id="segMO"   style="width:35%"></div>
+  <!-- ============================ ENTRADAS ============================ -->
+  <div>
+    <section class="bloco">
+      <h2 class="bloco__k">Parâmetros</h2>
+      <div class="dupla">
+        <div class="campo">
+          <label for="ouro">Ouro hoje</label>
+          <div class="campo__cx">
+            <input type="number" id="ouro" value="650" step="10" min="0"
+                   inputmode="decimal" aria-label="Preço do grama de ouro">
+            <u>R$/g</u>
+          </div>
+        </div>
+        <div class="campo">
+          <label for="mo">Mão de obra</label>
+          <div class="campo__cx">
+            <input type="number" id="mo" value="1.6" step="0.4" min="0"
+                   inputmode="decimal" aria-label="Mão de obra em gramas de ouro por quilo">
+            <u>g/kg</u>
+          </div>
+        </div>
       </div>
-      <div class="bar__key">
-        <span>Ouro <b id="pctOuro">65%</b></span>
-        <span>Mão de obra <b id="pctMO">35%</b></span>
+      <p class="campo__dica">Ficam salvos neste navegador. Mudam raramente.</p>
+    </section>
+
+    <section class="bloco">
+      <h2 class="bloco__k">Peça</h2>
+      <div class="dupla">
+        <div class="campo">
+          <label for="peso">Peso</label>
+          <div class="campo__cx">
+            <input type="number" id="peso" value="3.5" step="0.1" min="0"
+                   inputmode="decimal" aria-label="Peso da peça em gramas">
+            <u>g</u>
+          </div>
+        </div>
+        <div class="campo">
+          <label for="milesimos">Camada</label>
+          <div class="campo__cx">
+            <input type="number" id="milesimos" value="3" step="1" min="2" max="20"
+                   inputmode="numeric" aria-label="Milésimos de ouro, de 2 a 20">
+            <u>mil.</u>
+          </div>
+          <p class="campo__dica">De 2 a 20, só inteiros.</p>
+        </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- ============================ TILES =========================== -->
-  <section class="tiles">
-
-    <div class="tile">
-      <div class="tile__top">
-        <span class="tile__label">Peso</span>
-        <span class="tile__unit">gramas</span>
+    <section class="bloco">
+      <h2 class="bloco__k">Condição de pagamento</h2>
+      <div class="cond" role="group" aria-label="Condição de pagamento">
+        <button type="button" data-cond="avista" aria-pressed="true">
+          <b>À vista</b><span id="optAvista">—</span>
+        </button>
+        <button type="button" data-cond="prazo" aria-pressed="false">
+          <b>Cartão ou prazo</b><span id="optPrazo">—</span>
+        </button>
       </div>
-      <input type="number" class="tile__value num" id="peso" value="3.5" step="0.1" min="0" inputmode="decimal" aria-label="Peso da peça em gramas">
-    </div>
+      <p class="cond__n" id="condNota">&nbsp;</p>
+    </section>
 
-    <div class="tile">
-      <div class="tile__top">
-        <span class="tile__label">Camada</span>
-        <span class="tile__unit">2 a 20 milésimos</span>
-      </div>
-      <input type="number" class="tile__value num" id="milesimos" value="3" step="1" min="2" max="20" inputmode="numeric" aria-label="Milésimos de ouro, de 2 a 20">
-    </div>
-
-    <div class="tile">
-      <div class="tile__top">
-        <span class="tile__label">Mão de obra</span>
-        <span class="tile__unit">g de ouro / kg</span>
-      </div>
-      <input type="number" class="tile__value num" id="mo" value="1.6" step="0.4" min="0"
-             inputmode="decimal" aria-label="Mão de obra em milésimos">
-    </div>
-
-  </section>
-
-  <section class="condicao" role="group" aria-label="Condição de pagamento">
-    <div class="condicao__k">Condição de pagamento</div>
-    <div class="condicao__op">
-      <button type="button" class="opt" data-cond="avista" aria-pressed="true">
-        <span class="opt__t">À vista</span>
-        <span class="opt__d" id="optAvista">1,6 milésimos</span>
-      </button>
-      <button type="button" class="opt" data-cond="prazo" aria-pressed="false">
-        <span class="opt__t">Cartão ou prazo</span>
-        <span class="opt__d" id="optPrazo">2 milésimos</span>
-      </button>
-    </div>
-    <p class="condicao__n" id="condNota">
-      Base de 2 g de ouro por kg de mercadoria, com 20% de desconto à vista.
-    </p>
-  </section>
-
-  <!-- =========================== LEDGER =========================== -->
-  <section class="ledger">
-
-    <div class="card card--dados">
-      <h2 class="card__title">Dados do orçamento</h2>
+    <section class="bloco">
+      <h2 class="bloco__k">Dados do orçamento</h2>
       <div class="txt">
         <label for="cliente">Cliente (opcional)</label>
         <input type="text" id="cliente" placeholder="Nome do cliente" autocomplete="off">
@@ -592,60 +348,67 @@ main{
         <label for="descricao">Descrição da peça (opcional)</label>
         <input type="text" id="descricao" placeholder="Corrente veneziana 45 cm" autocomplete="off">
       </div>
-      <div class="line" style="margin-top:20px;border-top:1px solid rgba(213,190,121,.08);border-bottom:none;padding-top:16px">
-        <span class="line__k">Cotação usada<small>salva neste navegador</small></span>
-        <span class="line__v num" id="cotEcho">R$ 650,00 /g</span>
-      </div>
-    </div>
+      <p class="formula">
+        <code>Peso × (milésimos + M.O.) × cotação ÷ 1000</code><br>
+        A mão de obra é cobrada em gramas de ouro por quilo de mercadoria, o que
+        equivale a milésimos: 2 g por kg são 2 milésimos.
+      </p>
+    </section>
+  </div>
 
-    <div class="card card--fechamento">
-      <h2 class="card__title">Fechamento</h2>
+  <!-- ============================ RESULTADO ============================ -->
+  <aside class="painel">
+    <div class="saida">
+      <p class="rotulo">Valor do banho</p>
+      <p class="saida__v serif" id="valorPeca" role="status" aria-live="polite">R$ 10,46</p>
+      <p class="saida__u">por peça</p>
 
-      <div class="line">
-        <span class="line__k">Custo por grama<small>milésimos totais × cotação ÷ 1000</small></span>
-        <span class="line__v num" id="lGrama">R$ 2,99</span>
+      <div class="fita" role="img" aria-label="Composição entre ouro e mão de obra">
+        <i class="fita__o" id="segOuro" style="width:65%"></i>
+        <i class="fita__m" id="segMO" style="width:35%"></i>
       </div>
-      <div class="line">
-        <span class="line__k">Parcela de ouro<small>por peça</small></span>
-        <span class="line__v num" id="lOuro">R$ 6,83</span>
-      </div>
-      <div class="line">
-        <span class="line__k">Parcela de mão de obra<small>por peça</small></span>
-        <span class="line__v num" id="lMO">R$ 3,64</span>
-      </div>
-
-      <div class="grand">
-        <span class="grand__k">Valor do banho<small>por peça</small></span>
-        <span class="grand__v num" id="total">R$ 10,46</span>
+      <div class="fita__k">
+        <span>Ouro <b id="pctOuro">65%</b></span>
+        <span>M.O. <b id="pctMO">35%</b></span>
       </div>
 
-      <div class="actions">
-        <button type="button" class="btn btn--gold btn--wide" id="btnZap">
-          <svg class="btn__ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91C21.96 6.45 17.5 2 12.04 2zm0 18.15h-.01a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.19 8.19 0 0 1-1.26-4.38c0-4.54 3.7-8.23 8.25-8.23 2.2 0 4.27.86 5.83 2.42a8.19 8.19 0 0 1 2.41 5.82c0 4.54-3.69 8.23-8.24 8.23zm4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.24-.64.8-.79.97-.14.16-.29.18-.54.06-.25-.13-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.01-.38.11-.5.11-.11.25-.29.37-.43.13-.15.17-.25.25-.41.09-.17.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.4-.42-.56-.43h-.47c-.17 0-.43.06-.66.31-.22.25-.86.85-.86 2.07 0 1.22.89 2.4 1.01 2.56.12.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.06-.11-.22-.17-.47-.29z"/></svg>
+      <div class="linhas">
+        <div class="ln">
+          <span class="ln__k">Custo por grama<small>milésimos totais × cotação ÷ 1000</small></span>
+          <span class="ln__v" id="custoGrama">R$ 2,99</span>
+        </div>
+        <div class="ln">
+          <span class="ln__k">Milésimos totais</span>
+          <span class="ln__v" id="milTotal">4,6</span>
+        </div>
+        <div class="ln">
+          <span class="ln__k">Parcela de ouro<small>por peça</small></span>
+          <span class="ln__v" id="parcOuro">R$ 6,83</span>
+        </div>
+        <div class="ln">
+          <span class="ln__k">Parcela de mão de obra<small>por peça</small></span>
+          <span class="ln__v" id="parcMO">R$ 3,64</span>
+        </div>
+      </div>
+
+      <div class="acoes">
+        <button type="button" class="bt bt--ouro" id="btnZap">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91C21.96 6.45 17.5 2 12.04 2zm0 18.15h-.01a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.19 8.19 0 0 1-1.26-4.38c0-4.54 3.7-8.23 8.25-8.23 2.2 0 4.27.86 5.83 2.42a8.19 8.19 0 0 1 2.41 5.82c0 4.54-3.69 8.23-8.24 8.23zm4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.24-.64.8-.79.97-.14.16-.29.18-.54.06-.25-.13-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.01-.38.11-.5.11-.11.25-.29.37-.43.13-.15.17-.25.25-.41.09-.17.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.4-.42-.56-.43h-.47c-.17 0-.43.06-.66.31-.22.25-.86.85-.86 2.07 0 1.22.89 2.4 1.01 2.56.12.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.06-.11-.22-.17-.47-.29z"/></svg>
           Enviar no WhatsApp
         </button>
-        <button type="button" class="btn btn--line" id="btnCopiar">Copiar</button>
-        <button type="button" class="btn btn--line" id="btnImprimir">Imprimir</button>
+        <button type="button" class="bt bt--linha" id="btnCopiar">Copiar</button>
+        <button type="button" class="bt bt--linha" id="btnImprimir">Imprimir</button>
       </div>
     </div>
-
-  </section>
-
-  <p class="formula">
-    <span>Base de cálculo</span>
-    <code>Peso × (milésimos + M.O.) × cotação ÷ 1000</code>
-    <span>A mão de obra é cobrada em gramas de ouro por quilo de mercadoria, o que equivale a milésimos: 2 g por kg são 2 milésimos.</span>
-  </p>
-
+  </aside>
 </main>
 
-<!-- ============ ORÇAMENTO: só aparece na impressão / PDF ============ -->
+<!-- =============== ORÇAMENTO: só aparece na impressão / PDF =============== -->
 <div class="doc" id="doc">
-
-  <header class="doc__head">
+  <header class="doc__topo">
     <img src="mark-bistre.png" alt="">
-    <div class="doc__brand">
-      <div class="doc__name">WRA folheados</div>
+    <div>
+      <div class="doc__nome serif">WRA Folheados</div>
       <div class="doc__tag">Gold &amp; Silver</div>
     </div>
     <div class="doc__meta">
@@ -654,71 +417,52 @@ main{
     </div>
   </header>
 
-  <h1 class="doc__title">Orçamento de banho</h1>
-  <div class="doc__client" id="docClienteLinha">
-    <span>Cliente</span><b id="docCliente"></b>
-  </div>
+  <h1>Orçamento de banho</h1>
+  <div class="doc__cli" id="docClienteLinha"><span>Cliente</span><b id="docCliente"></b></div>
 
-  <section class="doc__grid">
-    <div class="doc__block">
+  <section class="doc__grade">
+    <div>
       <h2>Especificação da peça</h2>
-      <table>
-        <tbody>
-          <tr><td>Descrição</td><td id="docDesc">—</td></tr>
-          <tr><td>Peso unitário</td><td id="docPeso">—</td></tr>
-          <tr><td>Camada de ouro</td><td id="docMil">—</td></tr>
-          <tr><td>Mão de obra</td><td id="docMO">—</td></tr>
-          <tr><td>Condição de pagamento</td><td id="docCond">—</td></tr>
-          <tr class="em"><td>Milésimos totais</td><td id="docMilTotal">—</td></tr>
-        </tbody>
-      </table>
+      <table><tbody>
+        <tr><td>Descrição</td><td id="docDesc">—</td></tr>
+        <tr><td>Peso unitário</td><td id="docPeso">—</td></tr>
+        <tr><td>Camada de ouro</td><td id="docMil">—</td></tr>
+        <tr><td>Mão de obra</td><td id="docMO">—</td></tr>
+        <tr><td>Condição de pagamento</td><td id="docCond">—</td></tr>
+        <tr class="em"><td>Milésimos totais</td><td id="docMilTotal">—</td></tr>
+      </tbody></table>
     </div>
-    <div class="doc__block">
+    <div>
       <h2>Composição do custo</h2>
-      <table>
-        <tbody>
-          <tr><td>Cotação do ouro</td><td id="docOuro">—</td></tr>
-          <tr><td>Custo por grama</td><td id="docGrama">—</td></tr>
-          <tr><td>Parcela de ouro</td><td id="docParcOuro">—</td></tr>
-          <tr><td>Parcela de mão de obra</td><td id="docParcMO">—</td></tr>
-          <tr class="em"><td>Valor por peça</td><td id="docValorPeca">—</td></tr>
-        </tbody>
-      </table>
+      <table><tbody>
+        <tr><td>Cotação do ouro</td><td id="docOuro">—</td></tr>
+        <tr><td>Custo por grama</td><td id="docGrama">—</td></tr>
+        <tr><td>Parcela de ouro</td><td id="docParcOuro">—</td></tr>
+        <tr><td>Parcela de mão de obra</td><td id="docParcMO">—</td></tr>
+        <tr class="em"><td>Valor por peça</td><td id="docValorPeca">—</td></tr>
+      </tbody></table>
     </div>
   </section>
 
-  <section class="doc__total">
-    <div class="doc__cell doc__cell--unit"><span>Base de cálculo</span><b id="docBase">—</b></div>
-    <div class="doc__cell doc__cell--grand"><span>Valor do banho por peça</span><b id="docTotal">—</b></div>
+  <section class="doc__soma">
+    <div class="doc__cel doc__base"><span>Base de cálculo</span><b id="docBase">—</b></div>
+    <div class="doc__cel doc__val"><span>Valor do banho por peça</span><b id="docTotal">—</b></div>
   </section>
 
-  <section class="doc__note">
+  <section class="doc__nota">
     <p><b>Como o valor é calculado.</b>
        <code>Peso × (milésimos + mão de obra) × cotação do ouro ÷ 1000</code>.
-       A mão de obra é cobrada em gramas de ouro por quilo de mercadoria, o que equivale a milésimos: 2 g por kg são 2 milésimos.</p>
-    <p><b>Validade.</b> Este orçamento vale para o ouro a
-       <b id="docValidade">—</b> o grama. Se a cotação mudar, o valor muda na
-       mesma proporção.</p>
+       A mão de obra é cobrada em gramas de ouro por quilo de mercadoria, o que
+       equivale a milésimos: 2 g por kg são 2 milésimos.</p>
+    <p><b>Validade.</b> Este orçamento vale para o ouro a <b id="docValidade">—</b> o grama.
+       Se a cotação mudar, o valor muda na mesma proporção.</p>
   </section>
 
-  <footer class="doc__foot">
-    <div class="doc__sign">WRA folheados</div>
-    <div class="doc__sign">Cliente</div>
+  <footer class="doc__pe">
+    <div class="doc__ass">WRA Folheados</div>
+    <div class="doc__ass">Cliente</div>
   </footer>
-
-  <div class="doc__legal">WRA folheados · Gold &amp; Silver</div>
-
-</div>
-
-<div class="mobilebar" aria-hidden="true">
-  <div>
-    <div class="k">Por grama</div>
-    <div class="v num" id="mbGrama">R$ 2,99</div>
-  </div>
-  <div style="text-align:right">
-    <div class="k">Valor do banho</div>
-    <div class="v num" id="mbPeca">R$ 10,46</div>
-  </div>
+  <div class="doc__legal">WRA Folheados · Gold &amp; Silver</div>
 </div>
 
 <script>
@@ -727,43 +471,23 @@ main{
 
   /* ======================================================================
      MÃO DE OBRA
-     A regra da empresa é cobrar 2 g de ouro para folhear 1 kg de
-     mercadoria. Como 2 g por 1000 g são 2 milésimos, a base entra na
-     fórmula na mesma unidade da camada, sem conversão.
-
-     À vista há 20% de desconto: 2 × 0,80 = 1,6 milésimos.
-     No cartão ou a prazo vale a base cheia: 2 milésimos.
-
-     Mude os dois números abaixo para alterar a política inteira.
+     A empresa cobra 2 g de ouro para folhear 1 kg de mercadoria. Como 2 g
+     por 1000 g são 2 milésimos, a base entra na fórmula na mesma unidade
+     da camada, sem conversão.
+     À vista há 20% de desconto: 2 × 0,80 = 1,6 g por kg.
      ====================================================================== */
-  var MO_BASE  = 2;      // gramas de ouro por kg de mercadoria
-  var DESCONTO = 0.20;   // desconto para pagamento à vista
-
-  var MO_TABELA = {
-    avista: MO_BASE * (1 - DESCONTO),
-    prazo:  MO_BASE
-  };
+  var MO_BASE  = 2;
+  var DESCONTO = 0.20;
+  var MO_TABELA = {avista: MO_BASE * (1 - DESCONTO), prazo: MO_BASE};
   var ROTULO_COND = {avista:'À vista', prazo:'Cartão ou prazo'};
 
-  /* ======================================================================
-     WHATSAPP: número que recebe os orçamentos, só dígitos.
-     55 (país) + 88 (DDD) + o número. Troque aqui se mudar.
-     ====================================================================== */
   var WHATSAPP = '558835722582';   // +55 88 3572-2582
+  var MIL_MIN = 2, MIL_MAX = 20;
 
   var $ = function(id){ return document.getElementById(id); };
   var campos = ['peso','milesimos','ouro','mo'];
   var el = {};
   campos.forEach(function(id){ el[id] = $(id); });
-
-  /* A camada tem faixa fechada: de 2 a 20, só inteiros. */
-  var MIL_MIN = 2, MIL_MAX = 20;
-
-  function milesimosValidos(){
-    var n = Math.round(val(el.milesimos));
-    if (!isFinite(n)) n = MIL_MIN;
-    return Math.min(MIL_MAX, Math.max(MIL_MIN, n));
-  }
 
   var brl = new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:2});
   var dec = new Intl.NumberFormat('pt-BR',{maximumFractionDigits:3});
@@ -771,82 +495,23 @@ main{
 
   var STORE      = 'wra.precoOuro';
   var STORE_MO   = 'wra.maoDeObra';
-  var STORE_COND = 'wra.condicao';
-  var SEQ     = 'wra.orcamento.seq';
-  var reduce  = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var SEQ        = 'wra.orcamento.seq';
 
   function val(input){
     var n = parseFloat(String(input.value).replace(',','.'));
     return isFinite(n) && n > 0 ? n : 0;
   }
-
-  /* ----------------------------------------------------------------------
-     Largura do campo de cotação medida no texto real, e não em `ch`. Essa
-     unidade diverge da largura do dígito conforme a fonte que carregar
-     (Helvetica Neue, Inter ou Arial), deixando folga ou cortando o número.
-     ---------------------------------------------------------------------- */
-  var medidor = document.createElement('span');
-  medidor.setAttribute('aria-hidden','true');
-  medidor.style.cssText = 'position:absolute;left:-9999px;top:0;white-space:pre;visibility:hidden';
-  document.body.appendChild(medidor);
-
-  var larguraNativa = !!(window.CSS && CSS.supports && CSS.supports('field-sizing','content'));
-
-  function ajustarCotacao(){
-    if (larguraNativa) return;   // o CSS já resolve, sem medir nada
-
-    var i  = el.ouro;
-    var cs = getComputedStyle(i);
-    medidor.style.fontFamily         = cs.fontFamily;
-    medidor.style.fontSize           = cs.fontSize;
-    medidor.style.fontWeight         = cs.fontWeight;
-    medidor.style.letterSpacing      = cs.letterSpacing;
-    medidor.style.fontVariantNumeric = cs.fontVariantNumeric;
-    medidor.textContent = i.value || '0';
-
-    /* box-sizing é border-box: a largura precisa incluir recuo e bordas,
-       lidos do CSS para não desencontrar se o estilo mudar */
-    var extra = parseFloat(cs.paddingLeft)     + parseFloat(cs.paddingRight) +
-                parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth);
-    var texto = Math.ceil(medidor.getBoundingClientRect().width);
-    i.style.width = Math.max(22 + extra, texto + 4 + extra) + 'px';
+  function milesimosValidos(){
+    var n = Math.round(val(el.milesimos));
+    if (!isFinite(n)) n = MIL_MIN;
+    return Math.min(MIL_MAX, Math.max(MIL_MIN, n));
   }
-
-  /* ---- animação do número principal ----
-     Enfeite apenas: um timer de segurança garante o valor final, porque o
-     navegador suspende requestAnimationFrame em abas ocultas. */
-  var animFrom = 0, animRaf = null, animGuard = null, animGen = 0, DUR = 300;
-
-  function animarValor(target){
-    var node = $('valorPeca');
-    var gen  = ++animGen;
-    cancelAnimationFrame(animRaf);
-    clearTimeout(animGuard);
-
-    function concluir(){
-      if (gen !== animGen) return;
-      node.textContent = brl.format(target);
-      animFrom = target;
-    }
-    if (reduce || document.hidden || Math.abs(target - animFrom) < 0.005){ concluir(); return; }
-
-    var start = animFrom, delta = target - start, t0 = performance.now();
-    animGuard = setTimeout(concluir, DUR + 140);
-    animRaf = requestAnimationFrame(function tick(now){
-      if (gen !== animGen) return;
-      var p = Math.min(1, (now - t0) / DUR);
-      node.textContent = brl.format(start + delta * (1 - Math.pow(1 - p, 3)));
-      if (p < 1) animRaf = requestAnimationFrame(tick);
-      else concluir();
-    });
-  }
-
-  /* ---- condição de pagamento ----
-     Os botões apenas escrevem no campo da mão de obra; quem manda no
-     cálculo continua sendo o campo. Assim um valor digitado à mão nunca
-     entra em conflito com o botão marcado. */
   function moTexto(v){ return dec.format(v) + ' g de ouro por kg'; }
 
+  /* ---- condição de pagamento ----
+     Os botões só escrevem no campo da mão de obra; quem manda no cálculo
+     continua sendo o campo. Assim um valor digitado à mão nunca entra em
+     conflito com o botão marcado. */
   $('optAvista').textContent = moTexto(MO_TABELA.avista);
   $('optPrazo').textContent  = moTexto(MO_TABELA.prazo);
   $('condNota').textContent  =
@@ -859,7 +524,7 @@ main{
     return null;   // valor digitado fora da tabela
   }
 
-  document.querySelectorAll('.opt').forEach(function(bt){
+  document.querySelectorAll('.cond button').forEach(function(bt){
     bt.addEventListener('click', function(){
       el.mo.value = MO_TABELA[bt.getAttribute('data-cond')];
       calcular();
@@ -867,7 +532,7 @@ main{
   });
 
   /* ---- cálculo (idêntico à planilha) ---- */
-  var estado = {};
+  var estado = {}, numeroAtual = null;
 
   function calcular(){
     var peso      = val(el.peso);
@@ -881,11 +546,9 @@ main{
 
     var parcOuro = peso * milesimos * ouro / 1000;
     var parcMO   = peso * mo * ouro / 1000;
+    var pOuro    = milTotal > 0 ? (milesimos / milTotal) * 100 : 0;
 
-    var pOuro = milTotal > 0 ? (milesimos / milTotal) * 100 : 0;
-
-    ajustarCotacao();
-    animarValor(valorPeca);
+    $('valorPeca').textContent  = brl.format(valorPeca);
     $('custoGrama').textContent = brl.format(custoGrama);
     $('milTotal').textContent   = dec.format(milTotal);
     $('parcOuro').textContent   = brl.format(parcOuro);
@@ -896,73 +559,29 @@ main{
     $('pctOuro').textContent = pct.format(pOuro) + '%';
     $('pctMO').textContent   = pct.format(100 - pOuro) + '%';
 
-    $('lGrama').textContent  = brl.format(custoGrama);
-    $('lOuro').textContent   = brl.format(parcOuro);
-    $('lMO').textContent     = brl.format(parcMO);
-    $('total').textContent   = brl.format(valorPeca);
-    $('cotEcho').textContent = brl.format(ouro) + ' /g';
-
-    $('mbGrama').textContent = brl.format(custoGrama);
-    $('mbPeca').textContent  = brl.format(valorPeca);
-
     var cond = condicaoAtual(mo);
-    document.querySelectorAll('.opt').forEach(function(bt){
+    document.querySelectorAll('.cond button').forEach(function(bt){
       bt.setAttribute('aria-pressed', bt.getAttribute('data-cond') === cond ? 'true' : 'false');
     });
 
     try {
       localStorage.setItem(STORE, String(ouro));
       localStorage.setItem(STORE_MO, String(mo));
-      if (cond) localStorage.setItem(STORE_COND, cond);
     } catch(e){}
 
-    estado = {peso:peso, milesimos:milesimos, mo:mo, ouro:ouro,
-              milTotal:milTotal, custoGrama:custoGrama,
-              parcOuro:parcOuro, parcMO:parcMO, valorPeca:valorPeca,
-              cond:cond, condRotulo:cond ? ROTULO_COND[cond] : null};
+    estado = {peso:peso, milesimos:milesimos, mo:mo, ouro:ouro, milTotal:milTotal,
+              custoGrama:custoGrama, parcOuro:parcOuro, parcMO:parcMO,
+              valorPeca:valorPeca, cond:cond,
+              condRotulo: cond ? ROTULO_COND[cond] : null};
 
     /* mudou o cálculo, é outro orçamento: o próximo envio emite novo número */
     numeroAtual = null;
   }
 
-  /* ---- copiar ---- */
-  $('btnCopiar').addEventListener('click', function(){
-    var btn = this, e = estado;
-    var txt = [
-      'WRA folheados',
-      'Orçamento de banho nº ' + garantirNumero() + ', ' +
-        new Date().toLocaleDateString('pt-BR'), '',
-      'Peso: ' + dec.format(e.peso) + ' g',
-      'Camada de ouro: ' + dec.format(e.milesimos) + ' milésimos',
-      'Mão de obra: ' + moTexto(e.mo) +
-        (e.condRotulo ? ' (' + e.condRotulo.toLowerCase() + ')' : ''),
-      'Cotação do ouro: ' + brl.format(e.ouro) + '/g',
-      'Custo por grama: ' + brl.format(e.custoGrama), '',
-      'Valor do banho: ' + brl.format(e.valorPeca) + ' por peça'
-    ].join('\n');
-
-    function ok(){
-      var antes = btn.textContent;
-      btn.textContent = 'Copiado ✓';
-      setTimeout(function(){ btn.textContent = antes; }, 1600);
-    }
-    function fallback(){
-      var ta = document.createElement('textarea');
-      ta.value = txt; ta.style.position='fixed'; ta.style.opacity='0';
-      document.body.appendChild(ta); ta.select();
-      try { document.execCommand('copy'); ok(); } catch(err){}
-      document.body.removeChild(ta);
-    }
-    if (navigator.clipboard && navigator.clipboard.writeText){
-      navigator.clipboard.writeText(txt).then(ok, fallback);
-    } else fallback();
-  });
-
-  /* ---- orçamento impresso ---- */
+  /* ---- numeração ---- */
   function proximoNumero(){
     var h = new Date();
-    var ymd = h.getFullYear().toString() +
-              String(h.getMonth()+1).padStart(2,'0') +
+    var ymd = h.getFullYear() + String(h.getMonth()+1).padStart(2,'0') +
               String(h.getDate()).padStart(2,'0');
     var seq = 1;
     try {
@@ -972,17 +591,60 @@ main{
     } catch(e){}
     return ymd + '-' + String(seq).padStart(3,'0');
   }
-
-  var numeroAtual = null;
-
-  /* O número é emitido uma vez por orçamento e reaproveitado entre WhatsApp e
-     impressão. Qualquer mudança no cálculo zera (ver calcular), porque aí
-     passa a ser outro orçamento. */
   function garantirNumero(){
     if (!numeroAtual) numeroAtual = proximoNumero();
     return numeroAtual;
   }
 
+  /* ---- mensagem ---- */
+  function mensagem(negrito){
+    var e = estado, b = negrito ? '*' : '', i = negrito ? '_' : '', L = [];
+    var cliente = $('cliente').value.trim(), peca = $('descricao').value.trim();
+    L.push(b + 'WRA Folheados' + b);
+    L.push('Orçamento nº ' + garantirNumero() + ', ' + new Date().toLocaleDateString('pt-BR'));
+    L.push('');
+    if (cliente) L.push(b + 'Cliente:' + b + ' ' + cliente);
+    if (peca)    L.push(b + 'Peça:' + b + ' ' + peca);
+    if (cliente || peca) L.push('');
+    L.push('Peso: ' + dec.format(e.peso) + ' g');
+    L.push('Camada de ouro: ' + dec.format(e.milesimos) + ' milésimos');
+    L.push('Mão de obra: ' + moTexto(e.mo) +
+           (e.condRotulo ? ' (' + e.condRotulo.toLowerCase() + ')' : ''));
+    L.push('Cotação do ouro: ' + brl.format(e.ouro) + '/g');
+    L.push('Custo por grama: ' + brl.format(e.custoGrama));
+    L.push('');
+    L.push(b + 'Valor do banho: ' + brl.format(e.valorPeca) + ' por peça' + b);
+    L.push('');
+    L.push(i + 'Vale para o ouro a ' + brl.format(e.ouro) +
+           ' o grama. Se a cotação mudar, o valor muda junto.' + i);
+    return L.join('\n');
+  }
+
+  $('btnZap').addEventListener('click', function(){
+    open('https://wa.me/' + WHATSAPP + '?text=' + encodeURIComponent(mensagem(true)),
+         '_blank', 'noopener');
+  });
+
+  $('btnCopiar').addEventListener('click', function(){
+    var bt = this, txt = mensagem(false);
+    function ok(){
+      var antes = bt.textContent;
+      bt.textContent = 'Copiado';
+      setTimeout(function(){ bt.textContent = antes; }, 1600);
+    }
+    function reserva(){
+      var ta = document.createElement('textarea');
+      ta.value = txt; ta.style.cssText = 'position:fixed;opacity:0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); ok(); } catch(err){}
+      document.body.removeChild(ta);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText)
+      navigator.clipboard.writeText(txt).then(ok, reserva);
+    else reserva();
+  });
+
+  /* ---- orçamento impresso ---- */
   function montarDocumento(){
     var e = estado;
     garantirNumero();
@@ -992,7 +654,6 @@ main{
     var cliente = $('cliente').value.trim();
     $('docCliente').textContent = cliente;
     $('docClienteLinha').style.display = cliente ? 'flex' : 'none';
-
     /* a linha fica sempre visível para as duas colunas alinharem */
     $('docDesc').textContent = $('descricao').value.trim() || '—';
 
@@ -1000,7 +661,7 @@ main{
     $('docMil').textContent      = dec.format(e.milesimos) + ' milésimos';
     $('docMO').textContent       = moTexto(e.mo);
     $('docCond').textContent     = e.condRotulo || 'personalizada';
-    $('docMilTotal').textContent = dec.format(e.milesimos + e.mo) + ' milésimos';
+    $('docMilTotal').textContent = dec.format(e.milTotal) + ' milésimos';
 
     $('docOuro').textContent      = brl.format(e.ouro) + ' /g';
     $('docGrama').textContent     = brl.format(e.custoGrama);
@@ -1008,92 +669,38 @@ main{
     $('docParcMO').textContent    = brl.format(e.parcMO);
     $('docValorPeca').textContent = brl.format(e.valorPeca);
 
-    $('docBase').textContent  = dec.format(e.peso) + ' g × ' +
-                                dec.format(e.milTotal) + ' milésimos';
+    $('docBase').textContent  = dec.format(e.peso) + ' g × ' + dec.format(e.milTotal) + ' milésimos';
     $('docTotal').textContent = brl.format(e.valorPeca);
     $('docValidade').textContent = brl.format(e.ouro);
   }
 
-  $('btnImprimir').addEventListener('click', function(){
-    montarDocumento();
-    window.print();
-  });
+  $('btnImprimir').addEventListener('click', function(){ montarDocumento(); print(); });
+  addEventListener('beforeprint', montarDocumento);
 
-  /* ---- enviar no WhatsApp ----
-     Abre a conversa com a mensagem pronta. Quem aperta enviar é você:
-     o link só preenche o rascunho. */
-  function mensagemWhatsApp(){
-    var e = estado;
-    var cliente = $('cliente').value.trim();
-    var peca    = $('descricao').value.trim();
-    var linhas  = [];
-
-    linhas.push('*WRA folheados*');
-    linhas.push('');
-    if (cliente) linhas.push('*Cliente:* ' + cliente);
-    if (peca)    linhas.push('*Peça:* ' + peca);
-    if (cliente || peca) linhas.push('');
-
-    linhas.push('Peso: ' + dec.format(e.peso) + ' g');
-    linhas.push('Camada de ouro: ' + dec.format(e.milesimos) + ' milésimos');
-    linhas.push('Mão de obra: ' + moTexto(e.mo) +
-                (e.condRotulo ? ' (' + e.condRotulo.toLowerCase() + ')' : ''));
-    linhas.push('Milésimos totais: ' + dec.format(e.milTotal));
-    linhas.push('Cotação do ouro: ' + brl.format(e.ouro) + '/g');
-    linhas.push('Custo por grama: ' + brl.format(e.custoGrama));
-    linhas.push('');
-    linhas.push('*Valor do banho: ' + brl.format(e.valorPeca) + ' por peça*');
-    linhas.push('');
-    linhas.push('_Vale para o ouro a ' + brl.format(e.ouro) + ' o grama. ' +
-                'Se a cotação mudar, o valor muda junto._');
-
-    return linhas.join('\n');
-  }
-
-  $('btnZap').addEventListener('click', function(){
-    var url = 'https://wa.me/' + WHATSAPP + '?text=' +
-              encodeURIComponent(mensagemWhatsApp());
-    window.open(url, '_blank', 'noopener');
-  });
-  window.addEventListener('beforeprint', montarDocumento);
-
-  /* ---- init ---- */
+  /* ---- ligações ---- */
   try {
-    var saved = localStorage.getItem(STORE);
-    if (saved && parseFloat(saved) > 0) el.ouro.value = parseFloat(saved);
-    var savedMo = localStorage.getItem(STORE_MO);
-    el.mo.value = (savedMo !== null && isFinite(parseFloat(savedMo)))
-                ? parseFloat(savedMo) : MO_TABELA.avista;
+    var salvo = localStorage.getItem(STORE);
+    if (salvo && parseFloat(salvo) > 0) el.ouro.value = parseFloat(salvo);
+    var salvoMo = localStorage.getItem(STORE_MO);
+    el.mo.value = (salvoMo !== null && isFinite(parseFloat(salvoMo)))
+                ? parseFloat(salvoMo) : MO_TABELA.avista;
   } catch(e){ el.mo.value = MO_TABELA.avista; }
 
-  campos.forEach(function(id){ el[id].addEventListener('input', calcular); });
-
-  /* Clicar no número seleciona tudo, para digitar já substituir o valor.
-     O setTimeout é necessário porque o mousedown desfaz um select() feito
-     de dentro do próprio evento de foco. */
   campos.forEach(function(id){
+    el[id].addEventListener('input', calcular);
     el[id].addEventListener('focus', function(){
-      var campo = this;
-      setTimeout(function(){ campo.select(); }, 0);
+      var c = this; setTimeout(function(){ c.select(); }, 0);
     });
   });
 
-  /* Normaliza a camada só ao sair do campo. Corrigir durante a digitação
-     atrapalha quem digita "18" e vê o "1" virar "2" no meio do caminho. */
+  /* a camada só é normalizada ao sair do campo: corrigir durante a digitação
+     atrapalha quem digita "18" e vê o "1" virar "2" */
   el.milesimos.addEventListener('change', function(){
     this.value = milesimosValidos();
     calcular();
   });
-  calcular();
 
-  /* A largura da cotação é medida no texto, então precisa ser refeita quando
-     a fonte web termina de carregar. Até lá a medição usa a fonte de
-     reserva, mais estreita, e o número sairia cortado. O mesmo vale ao
-     cruzar o ponto de quebra de 620px, onde o corpo da fonte muda. */
-  if (document.fonts && document.fonts.ready){
-    document.fonts.ready.then(ajustarCotacao);
-  }
-  window.addEventListener('resize', ajustarCotacao);
+  calcular();
 })();
 </script>
 </body>
